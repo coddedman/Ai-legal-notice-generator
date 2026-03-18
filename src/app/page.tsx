@@ -1,65 +1,157 @@
-import Image from "next/image";
+'use client';
+
+import React, { useState } from 'react';
+import { Container, Typography, Box, Paper, Snackbar, Alert, CircularProgress } from '@mui/material';
+import NoticeForm, { NoticeFormData } from '@/components/NoticeForm';
+import NoticeOutput from '@/components/NoticeOutput';
+import { ShieldCheck, Scale, FileSignature } from 'lucide-react';
 
 export default function Home() {
+  const [loading, setLoading] = useState(false);
+  const [generatedData, setGeneratedData] = useState<{
+    legalNotice: string;
+    whatsappMessage: string;
+    complaintDraft: string;
+  } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGenerate = async (formData: NoticeFormData) => {
+    setLoading(true);
+    setError(null);
+    setGeneratedData(null);
+    
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to generate notices');
+      }
+
+      const data = await res.json();
+      if (data.error) {
+         throw new Error(data.error);
+      }
+      
+      setGeneratedData(data);
+      
+      // Scroll to result smoothly
+      setTimeout(() => {
+         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      }, 300);
+      
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <Box sx={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', pb: 10 }}>
+      {/* Background Orbs */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '-15%',
+          left: '-10%',
+          width: '50vw',
+          height: '50vw',
+          background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, rgba(99,102,241,0) 70%)',
+          borderRadius: '50%',
+          zIndex: -1,
+        }}
+      />
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: '-20%',
+          right: '-10%',
+          width: '60vw',
+          height: '60vw',
+          background: 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, rgba(139,92,246,0) 70%)',
+          borderRadius: '50%',
+          zIndex: -1,
+        }}
+      />
+      
+      <Container maxWidth="md" sx={{ pt: { xs: 8, md: 12 } }}>
+        <Box textAlign="center" mb={6} className="animate-fade-in">
+          <Box display="flex" justifyContent="center" gap={2} mb={3}>
+            <Box p={2} borderRadius="50%" bgcolor="rgba(99,102,241,0.1)" color="primary.main">
+               <Scale size={32} />
+            </Box>
+            <Box p={2} borderRadius="50%" bgcolor="rgba(16,185,129,0.1)" color="success.main">
+               <ShieldCheck size={32} />
+            </Box>
+            <Box p={2} borderRadius="50%" bgcolor="rgba(139,92,246,0.1)" color="secondary.main">
+               <FileSignature size={32} />
+            </Box>
+          </Box>
+          <Typography
+            variant="h1"
+            component="h1"
+            sx={{
+              fontWeight: 800,
+              mb: 2,
+              background: 'linear-gradient(135deg, #fff 0%, #cbd5e1 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontSize: { xs: '2.5rem', md: '4rem' }
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            AI Legal Notice Generator
+          </Typography>
+          <Typography variant="h6" color="text.secondary" sx={{ maxWidth: '600px', mx: 'auto', fontWeight: 400, opacity: 0.8 }}>
+            Empowering individuals and SMEs across India. Instantly generate perfectly formatted
+            legal notices, consumer court complaints, and WhatsApp demands.
+          </Typography>
+        </Box>
+
+        <Paper 
+          elevation={0}
+          className="glass-panel animate-fade-in"
+          sx={{ 
+            p: { xs: 3, md: 5 }, 
+            borderRadius: 4,
+            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+            '&:hover': {
+              boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
+            }
+          }}
+        >
+          <Typography variant="h5" color="text.primary" fontWeight="600" mb={1} display="flex" alignItems="center" gap={1}>
+             Draft Your Notice
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mb={4}>
+            Fill in the details below. Our AI will automatically generate culturally and legally appropriate Indian drafts for you.
+          </Typography>
+          
+          <NoticeForm onSubmit={handleGenerate} loading={loading} />
+        </Paper>
+
+        {loading && (
+          <Box mt={6} display="flex" flexDirection="column" alignItems="center" className="animate-fade-in">
+            <CircularProgress size={50} thickness={4} sx={{ color: 'primary.main', mb: 2 }} />
+            <Typography variant="h6" color="text.secondary" className="animate-fade-in">
+              Analyzing dispute details and generating official drafts...
+            </Typography>
+          </Box>
+        )}
+
+        {generatedData && !loading && (
+          <NoticeOutput data={generatedData} />
+        )}
+      </Container>
+      
+      <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(null)}>
+        <Alert severity="error" onClose={() => setError(null)} sx={{ width: '100%', borderRadius: 2 }}>
+          {error}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 }
