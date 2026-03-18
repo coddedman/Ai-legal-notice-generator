@@ -349,5 +349,26 @@
       "targetDoc": "legalNotice"
     },
     "status": "drafting_legalNotice"
+  },
+  {
+    "id": "38110355-b366-4d19-8471-1a9560f6e744",
+    "timestamp": "2026-03-18T17:53:14.472Z",
+    "confidentialData": {
+      "senderType": "self",
+      "lawyerName": "",
+      "issueType": "Service Delay",
+      "senderName": "Rahul Verma",
+      "receiverName": "DreamShot Studio Pvt Ltd",
+      "serviceDetails": "Wedding Photography and Videography",
+      "amount": "500000",
+      "paymentDate": "2025-10-01",
+      "deliveryDate": "2025-11-15",
+      "description": "The photographer took the advance but did not show up on the wedding day. Phone is switched off.",
+      "evidenceText": "",
+      "targetDoc": "legalNotice",
+      "refinement": "my address is noida and phine number is 8770733490",
+      "currentDraft": "I, Rahul Verma, hereby serve upon you, DreamShot Studio Pvt Ltd, this Formal Legal Notice regarding a significant breach of contract and resultant financial loss. This notice is served under the provisions of the Bharatiya Nyaya Sanhita, 2023 (BNS) and relevant principles of Indian Contract Law.\n\n1. **Subject Matter:** This notice pertains to the failure of DreamShot Studio Pvt Ltd to provide wedding photography and videography services as agreed upon, resulting in substantial financial damages. The agreement, implicitly formed through your acceptance of the advance payment, constitutes a legally binding contract.\n\n2. **Breach of Contract and Relevant Sections of the Bharatiya Nyaya Sanhita:** You, DreamShot Studio Pvt Ltd, have demonstrably breached the terms of our agreement. Specifically, you failed to render the contracted services on the agreed-upon date, 2025-11-15. This constitutes a violation of Section 318 of the Bharatiya Nyaya Sanhita, 2023, which deals with ‘Cheating’ (Dagdi).  The act of accepting an advance payment for services you subsequently failed to provide, coupled with the deliberate avoidance of communication (as evidenced by the switched-off phone), clearly indicates an intention to deceive and cause financial harm.  Furthermore, the failure to perform the agreed-upon service can be construed as an attempt to defraud, potentially falling under Section 420 of the Indian Penal Code (IPC) – ‘Cheating’ – although the BNS provides a more contemporary framework for addressing such conduct. We intend to pursue this matter under the BNS.\n\n3. **Details of the Agreement and Payment:** On 2025-10-01, I, Rahul Verma, made a payment of INR 500,000 to DreamShot Studio Pvt Ltd as advance payment for your services, as per our verbal agreement and subsequent confirmation email (a copy of which is attached as Exhibit A). The agreed-upon delivery date for the photography and videography services was 2025-11-15.  The payment was made in good faith, relying on your representation of your ability to fulfill the contract.\n\n4. **Description of the Incident:** On the wedding day, 2025-11-15, the photographer assigned to our event failed to appear. Despite repeated attempts to contact you via telephone, your phone remained switched off, and no explanation for your absence was provided. This complete lack of communication and failure to perform the contracted services is wholly unacceptable and constitutes a grave dereliction of your contractual obligations.\n\n5. **Damages:** As a direct consequence of your breach of contract, I have suffered significant financial losses. These losses include, but are not limited to: the loss of the advance payment of INR 500,000, the disruption to the wedding celebrations, and the emotional distress caused by your unprofessional conduct. I am quantifying the damages at INR 500,000, which I demand to be reimbursed immediately.\n\n6. **Demand for Redressal:** I hereby demand the immediate payment of INR 500,000 to compensate for the damages suffered.  This payment should be made within fourteen (14) days from the date of receipt of this notice. Failure to comply with this demand within the stipulated timeframe will leave me with no option but to initiate legal proceedings against DreamShot Studio Pvt Ltd in the competent court of law, seeking not only the recovery of the aforementioned sum but also punitive damages and legal costs.\n\n7. **Notice of Intention to File Suit:** Please be advised that if the aforementioned sum is not received within fourteen (14) days, I intend to file a civil suit against DreamShot Studio Pvt Ltd under the Bharatiya Nyaya Sanhita, 2023, seeking full redressal of my claims.  We will also explore all available legal avenues to recover our losses, including seeking a declaration of your breach of contract and an injunction to prevent any further unlawful actions.\n\n8. **Proof of Service:** This notice is served upon you by registered post with acknowledgment due. A copy of this notice is retained for my records.\n\nSincerely,\n\nRahul Verma\n[Address]\n[Contact Number]"
+    },
+    "status": "refining_legalNotice"
   }
 ]

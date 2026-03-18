@@ -115,9 +115,9 @@ export async function POST(req: Request) {
         let errorData = '';
         
         const fallbackModels = [
-          'openrouter/free',
-          'google/gemma-3-27b-it:free',
-          'nousresearch/hermes-3-llama-3.1-405b:free'
+          'google/gemini-2.0-flash-lite-preview-02-05:free',
+          'google/gemini-2.0-flash-exp:free',
+          'google/gemini-flash-1.5-free-v1:0'
         ];
         
         for (const targetModel of fallbackModels) {
