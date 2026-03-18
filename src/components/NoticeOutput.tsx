@@ -108,8 +108,11 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabIndex(newValue);
     const targetId = tabs[newValue].id;
-    if (targetId === 'whatsappMessage') fetchDoc('whatsappMessage');
-    if (targetId === 'complaintDraft') fetchDoc('complaintDraft');
+    // Don't fetch if already has content OR if in edit mode
+    if (!editMode[targetId]) {
+      if (targetId === 'whatsappMessage') fetchDoc('whatsappMessage');
+      if (targetId === 'complaintDraft') fetchDoc('complaintDraft');
+    }
   };
 
   const tabs = [
@@ -427,20 +430,36 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
                 <Paper
                   elevation={0}
                   sx={{
-                    p: 4,
                     minHeight: '300px',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: docLoading[tab.id] ? 'center' : 'flex-start',
                     alignItems: docLoading[tab.id] ? 'center' : 'stretch',
                     bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.3)' : '#fafafa',
-                    border: theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.06)',
+                    border: editMode[tab.id]
+                      ? '2px solid #10b981'
+                      : theme.palette.mode === 'dark'
+                      ? '1px solid rgba(255,255,255,0.05)'
+                      : '1px solid rgba(0,0,0,0.06)',
                     borderRadius: 2,
                     maxHeight: '60vh',
                     overflowY: 'auto',
                     position: 'relative',
+                    transition: 'border 0.2s',
                   }}
                 >
+                  {/* Edit mode indicator bar */}
+                  {editMode[tab.id] && (
+                    <Box sx={{ px: 2, py: 0.8, bgcolor: 'rgba(16,185,129,0.1)', borderBottom: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Pencil size={13} color="#10b981" />
+                      <Typography variant="caption" color="#10b981" fontWeight={700}>EDIT MODE — Type freely to make changes</Typography>
+                      <Box sx={{ ml: 'auto', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 0.5 }}
+                        onClick={() => setEditMode(prev => ({ ...prev, [tab.id]: false }))}>
+                        <CheckCircle2 size={14} color="#10b981" />
+                        <Typography variant="caption" color="#10b981" fontWeight={700}>Done</Typography>
+                      </Box>
+                    </Box>
+                  )}
                   {docLoading[tab.id] ? (
                     <Box textAlign="center">
                       <Loader2 size={32} className="animate-spin" style={{ color: theme.palette.primary.main, marginBottom: 12 }} />
@@ -457,26 +476,30 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
                       <Typography color="error" fontWeight={600}>{fetchError}</Typography>
                     </Box>
                   ) : editMode[tab.id] ? (
-                    // DIRECT EDIT MODE
-                    <TextField
-                      fullWidth
-                      multiline
-                      value={docs[tab.id]}
-                      onChange={(e) => setDocs(prev => ({ ...prev, [tab.id]: e.target.value }))}
-                      variant="standard"
-                      InputProps={{ disableUnderline: true }}
-                      sx={{
-                        '& .MuiInputBase-root': {
-                          fontFamily: 'serif',
+                    // ✏️ DIRECT EDIT MODE — full-height auto-resize textarea
+                    <Box sx={{ p: 3 }}>
+                      <textarea
+                        autoFocus
+                        value={docs[tab.id]}
+                        onChange={(e) => setDocs(prev => ({ ...prev, [tab.id]: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          minHeight: '400px',
+                          fontFamily: 'Georgia, Times New Roman, serif',
                           fontSize: '0.9rem',
-                          lineHeight: 1.85,
-                          color: 'text.primary',
-                        }
-                      }}
-                    />
+                          lineHeight: '1.85',
+                          color: theme.palette.mode === 'dark' ? '#e2e8f0' : '#1e293b',
+                          background: 'transparent',
+                          border: 'none',
+                          outline: 'none',
+                          resize: 'vertical',
+                          padding: 0,
+                        }}
+                      />
+                    </Box>
                   ) : (
-                    // FORMATTED VIEW MODE
-                    <Box>
+                    // 📄 FORMATTED VIEW MODE
+                    <Box sx={{ p: 4 }}>
                       {renderFormattedContent(tab.content) || (
                         <Typography color="text.secondary" fontStyle="italic">
                           Drafting will begin when you click this tab.
