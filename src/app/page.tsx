@@ -1,12 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Container, Typography, Box, Paper, Snackbar, Alert, CircularProgress } from '@mui/material';
+import React, { useState, useContext } from 'react';
+import { Container, Typography, Box, Paper, Snackbar, Alert, CircularProgress, IconButton } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import { ColorModeContext } from '@/theme/ThemeRegistry';
 import NoticeForm, { NoticeFormData } from '@/components/NoticeForm';
 import NoticeOutput from '@/components/NoticeOutput';
-import { ShieldCheck, Scale, FileSignature } from 'lucide-react';
+import { ShieldCheck, Scale, FileSignature, Sun, Moon } from 'lucide-react';
 
 export default function Home() {
+  const theme = useTheme();
+  const colorMode = useContext(ColorModeContext);
+  
   const [loading, setLoading] = useState(false);
   const [generatedData, setGeneratedData] = useState<{
     legalNotice: string;
@@ -52,6 +57,19 @@ export default function Home() {
 
   return (
     <Box sx={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', pb: 10 }}>
+      {/* Theme Toggle Button */}
+      <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}>
+        <IconButton onClick={colorMode.toggleColorMode} color="inherit" sx={{ 
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+            border: '1px solid',
+            borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+            backdropFilter: 'blur(10px)',
+            '&:hover': { bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }
+          }}>
+          {theme.palette.mode === 'dark' ? <Sun size={20} color={theme.palette.primary.light} /> : <Moon size={20} color={theme.palette.primary.main} />}
+        </IconButton>
+      </Box>
+
       {/* Background Orbs */}
       <Box
         sx={{
@@ -97,7 +115,7 @@ export default function Home() {
             sx={{
               fontWeight: 800,
               mb: 2,
-              background: 'linear-gradient(135deg, #fff 0%, #cbd5e1 100%)',
+              background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #fff 0%, #cbd5e1 100%)' : 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               fontSize: { xs: '2.5rem', md: '4rem' }

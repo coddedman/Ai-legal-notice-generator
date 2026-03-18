@@ -1,15 +1,38 @@
 'use client';
 
-import * as React from 'react';
-import { ThemeProvider } from '@mui/material/styles';
+import React, { useState, useMemo, createContext, useEffect } from 'react';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import theme from './theme';
+import { getDesignTokens } from './theme';
+import { PaletteMode } from '@mui/material';
+
+export const ColorModeContext = createContext({ toggleColorMode: () => {} });
 
 export default function ThemeRegistry({ children }: { children: React.ReactNode }) {
+  const [mode, setMode] = useState<PaletteMode>('dark');
+  
+  // Apply data-theme attribute for any possible global CSS reliance
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', mode);
+  }, [mode]);
+
+  const colorMode = useMemo(
+    () => ({
+      toggleColorMode: () => {
+        setMode((prevMode: PaletteMode) => (prevMode === 'light' ? 'dark' : 'light'));
+      },
+    }),
+    [],
+  );
+
+  const theme = useMemo(() => createTheme(getDesignTokens(mode)), [mode]);
+
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      {children}
-    </ThemeProvider>
+    <ColorModeContext.Provider value={colorMode}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline enableColorScheme />
+        {children}
+      </ThemeProvider>
+    </ColorModeContext.Provider>
   );
 }

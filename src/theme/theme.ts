@@ -1,33 +1,65 @@
-import { createTheme } from '@mui/material/styles';
+import { PaletteMode } from '@mui/material';
 
-const theme = createTheme({
+export const getDesignTokens = (mode: PaletteMode) => ({
   palette: {
-    mode: 'dark',
-    background: {
-      default: '#0f1115',
-      paper: '#1e2128',
-    },
-    primary: {
-      main: '#6366f1',
-      light: '#818cf8',
-      dark: '#4f46e5',
-    },
-    secondary: {
-      main: '#8b5cf6',
-      light: '#a78bfa',
-      dark: '#7c3aed',
-    },
-    success: {
-      main: '#10b981',
-    },
-    error: {
-      main: '#ef4444',
-    },
-    text: {
-      primary: '#f8fafc',
-      secondary: '#94a3b8',
-    },
-    divider: 'rgba(255, 255, 255, 0.08)',
+    mode,
+    ...(mode === 'light'
+      ? {
+          // palette values for light mode
+          background: {
+            default: '#f8fafc',
+            paper: '#ffffff',
+          },
+          primary: {
+            main: '#4f46e5',
+            light: '#6366f1',
+            dark: '#3730a3',
+          },
+          secondary: {
+            main: '#7c3aed',
+            light: '#8b5cf6',
+            dark: '#5b21b6',
+          },
+          success: {
+            main: '#059669',
+          },
+          error: {
+            main: '#dc2626',
+          },
+          text: {
+            primary: '#0f172a',
+            secondary: '#475569',
+          },
+          divider: 'rgba(0, 0, 0, 0.08)',
+        }
+      : {
+          // palette values for dark mode
+          background: {
+            default: '#0f1115',
+            paper: '#1e2128',
+          },
+          primary: {
+            main: '#6366f1',
+            light: '#818cf8',
+            dark: '#4f46e5',
+          },
+          secondary: {
+            main: '#8b5cf6',
+            light: '#a78bfa',
+            dark: '#7c3aed',
+          },
+          success: {
+            main: '#10b981',
+          },
+          error: {
+            main: '#ef4444',
+          },
+          text: {
+            primary: '#f8fafc',
+            secondary: '#94a3b8',
+          },
+          divider: 'rgba(255, 255, 255, 0.08)',
+        }),
   },
   typography: {
     fontFamily: '"Outfit", "Roboto", "Helvetica", "Arial", sans-serif',
@@ -47,7 +79,9 @@ const theme = createTheme({
           boxShadow: 'none',
           padding: '10px 24px',
           '&:hover': {
-            boxShadow: '0px 0px 20px rgba(99, 102, 241, 0.4)',
+            boxShadow: mode === 'dark' 
+              ? '0px 0px 20px rgba(99, 102, 241, 0.4)'
+              : '0px 4px 14px rgba(79, 70, 229, 0.4)',
           },
         },
       },
@@ -56,17 +90,17 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           '& .MuiOutlinedInput-root': {
-            backgroundColor: 'rgba(255,255,255,0.03)',
+            backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
             backdropFilter: 'blur(10px)',
             transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
             '&.Mui-focused': {
-              boxShadow: '0 0 0 2px rgba(99, 102, 241, 0.2)',
+              boxShadow: mode === 'dark' ? '0 0 0 2px rgba(99, 102, 241, 0.2)' : '0 0 0 2px rgba(79, 70, 229, 0.2)',
             },
             '& fieldset': {
-              borderColor: 'rgba(255,255,255,0.1)',
+              borderColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
             },
             '&:hover fieldset': {
-              borderColor: 'rgba(255,255,255,0.2)',
+              borderColor: mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
             },
           },
         },
@@ -76,12 +110,10 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundImage: 'none',
-          backgroundColor: '#1e2128',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          backgroundColor: mode === 'dark' ? '#1e2128' : '#ffffff',
+          border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)',
         },
       },
     },
   },
 });
-
-export default theme;

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTheme } from '@mui/material/styles';
 import {
   Box,
   Tabs,
@@ -23,6 +24,7 @@ interface OutputProps {
 }
 
 export default function NoticeOutput({ data }: OutputProps) {
+  const theme = useTheme();
   const [tabIndex, setTabIndex] = useState(0);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
@@ -69,7 +71,7 @@ export default function NoticeOutput({ data }: OutputProps) {
   return (
     <Box sx={{ width: '100%', mt: 4 }} className="animate-fade-in">
       <Paper elevation={0} className="glass-panel" sx={{ borderRadius: 3, overflow: 'hidden' }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: 'rgba(0,0,0,0.2)' }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.03)' }}>
           <Tabs
             value={tabIndex}
             onChange={(e, newIndex) => setTabIndex(newIndex)}
@@ -122,8 +124,8 @@ export default function NoticeOutput({ data }: OutputProps) {
                   elevation={0}
                   sx={{
                     p: 3,
-                    bgcolor: 'rgba(0,0,0,0.3)',
-                    border: '1px solid rgba(255,255,255,0.05)',
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.02)',
+                    border: theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)',
                     borderRadius: 2,
                     maxHeight: '400px',
                     overflowY: 'auto',
