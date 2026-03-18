@@ -16,6 +16,7 @@ export async function POST(req: Request) {
       description,
       senderType,
       lawyerName,
+      targetDoc = 'legalNotice' // default to legalNotice if not specified
     } = body;
 
     // --- BFF Architecture: Securely store confidential information server-side ---
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
         id: crypto.randomUUID(),
         timestamp: new Date().toISOString(),
         confidentialData: body,
-        status: 'draft_generated'
+        status: `drafting_${targetDoc}`
       };
       
       let records = [];
@@ -47,57 +48,60 @@ export async function POST(req: Request) {
     }
     // -----------------------------------------------------------------------------
 
-    // We can try calling an external API if key is set, otherwise use an advanced mock 
-    // to provide the MVP experience right away without configuration blocks.
+    // We can try calling an external API if key is set
     const apiKey = process.env.OPENROUTER_API_KEY;
 
     if (apiKey) {
-      // Implement OpenRouter/Groq API Call with an advanced, highly-analytical prompt
-      const prompt = `You are a highly experienced Indian Senior Advocate (Lawyer). Analyze the following dispute and draft a highly detailed, professional, and legally sound set of documents.
-        
-        CLIENT DETAILS:
-        - Drafting Party: ${senderType === 'lawyer' ? `Advocate ${lawyerName}` : 'The Client Themselves (Pro Se)'}
-        - Sender (The Aggrieved Client): ${senderName}
-        - Receiver (Opposite Party): ${receiverName}
-        - Issue Category: ${issueType}
-        - Service/Product: ${serviceDetails}
-        - Amount Involved: INR ${amount}
-        - Payment Date: ${paymentDate}
-        - Agreed Delivery Date: ${deliveryDate}
-        
-        CLIENT'S RAW DESCRIPTION OF THE INCIDENT:
-        ${description}
+      const isLawyer = senderType === 'lawyer';
+      
+      let docTask = '';
+      if (targetDoc === 'legalNotice') {
+        docTask = `Draft a comprehensive, formidable, and highly structured Formal Legal Notice. 
+          CRITICAL TONE & IDENTITY: 
+          ${isLawyer 
+            ? `You ARE Advocate ${lawyerName}. The notice MUST begin with: "Under instructions from and on behalf of my client ${senderName}, I, Advocate ${lawyerName}, hereby serve upon you..."` 
+            : `You ARE ${senderName} (The Client). You are drafting this FOR YOURSELF. The notice MUST begin with: "I, ${senderName}, hereby serve upon you..." and must NOT mention any other lawyer name or use lawyer placeholders like [Your Name].`}`;
+      } else if (targetDoc === 'whatsappMessage') {
+        docTask = `Draft a stern, professionally intimidating WhatsApp message summarizing the dispute.
+          IDENTITY: ${isLawyer ? `Sent by Advocate ${lawyerName} on behalf of ${senderName}` : `Sent by ${senderName} directly`}.`;
+      } else {
+        docTask = `Draft a detailed Consumer Court OR Police Complaint draft covering cause of action and specific prayers.
+          IDENTITY: ${isLawyer ? `Drafted by Advocate ${lawyerName} for ${senderName}` : `Drafted by ${senderName} personally`}.`;
+      }
 
-        YOUR TASK:
-        Do not just repeat the details. Analyze the situation. If they took payment and are denying service, identify the potential offenses under Indian Law (e.g., Cheating under Section 415/420 IPC, Criminal Breach of Trust under Section 405/406 IPC, or Deficiency of Service/Unfair Trade Practice under the Consumer Protection Act, 2019).
+      const prompt = `You are a highly experienced Indian Senior Advocate. 
+        Analyze the following dispute and draft a highly detailed, professional, and legally sound ${targetDoc}.
+        
+        CONTEXT:
+        - Drafting Party: ${isLawyer ? `Advocate ${lawyerName}` : 'The Client Themmselves (Pro Se)'}
+        - Aggrieved Party: ${senderName}
+        - Opposite Party: ${receiverName}
+        - Issue: ${issueType} (${serviceDetails})
+        - Stake: INR ${amount}
+        - Key Dates: Paid on ${paymentDate}, Due on ${deliveryDate}
+        
+        DESCRIPTION: "${description}"
 
-        Draft the following THREE documents:
-        
-        1. "legalNotice": A comprehensive, formidable, and highly structured Formal Legal Notice. 
-           CRITICAL TONE ADJUSTMENT: If the Drafting Party is an Advocate, the notice MUST begin with "Under instructions from and on behalf of my client ${senderName}, I, Advocate ${lawyerName}, hereby serve upon you the following legal notice...". If drafted by the client themselves, it MUST begin strictly in the first person: "I, ${senderName}, hereby serve upon you the following legal notice...".
-           It must include proper header, facts, explicit legal sections, firm demand for refund + compensation + legal fees within a strict 15-day ultimatum.
-        
-        2. "whatsappMessage": A stern, professionally intimidating WhatsApp message summarizing the notice.
-        
-        3. "complaintDraft": A detailed Consumer Court OR Police Complaint draft covering cause of action and specific prayers.
+        YOUR SPECIFIC TASK:
+        ${docTask}
 
-        Output ONLY a pure JSON object. No markdown syntax. Exactly three string keys: "legalNotice", "whatsappMessage", "complaintDraft".`;
+        IMPORTANT: If it is a "legalNotice", include explicit legal sections (Facts, Legal Grounds, Ultimatum) citing relevant Indian laws (e.g. IPC 420, Consumer Protection Act 2019).
+        
+        OUTPUT FORMAT: Return ONLY a JSON object with a single key: "${targetDoc}". No markdown.`;
         
       try {
         let fetchSuccess = false;
         let aiResponse;
         let errorData = '';
         
-        // Use OpenRouter's auto-router for free models, plus confirmed reliable backups
         const fallbackModels = [
           'openrouter/free',
           'google/gemma-3-27b-it:free',
-          'nousresearch/hermes-3-llama-3.1-405b:free',
-          'meta-llama/llama-3.3-70b-instruct:free'
+          'nousresearch/hermes-3-llama-3.1-405b:free'
         ];
         
         for (const targetModel of fallbackModels) {
-           console.log('[BFF] Attempting generation with ' + targetModel + '...');
+           console.log('[BFF] Attempting targeted generation (' + targetDoc + ') with ' + targetModel + '...');
            aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
               method: 'POST',
               headers: {
@@ -114,7 +118,7 @@ export async function POST(req: Request) {
            
            if (aiResponse.ok) {
               fetchSuccess = true;
-              break; // exit loop
+              break; 
            } else {
               errorData = await aiResponse.text();
               console.warn('[BFF] Model ' + targetModel + ' failed. Trying next -> ' + errorData);
@@ -130,39 +134,33 @@ export async function POST(req: Request) {
         
         if (content) {
             const jsonMatch = content.match(/\{[\s\S]*\}/);
-            if (!jsonMatch) {
-               throw new Error('AI did not return a valid JSON format.');
-            }
+            if (!jsonMatch) { throw new Error('AI did not return a valid JSON format.'); }
             const parsed = JSON.parse(jsonMatch[0]);
-            console.log('[BFF] AI Successfully Generated Legal Documents.');
+            console.log(`[BFF] AI Successfully Generated ${targetDoc}.`);
             return NextResponse.json(parsed);
         } else {
              throw new Error('Empty response from AI');
         }
       } catch (err: any) {
-        console.error('Strict AI Generation Failed:', err.message);
-        return NextResponse.json({ error: err.message || 'Failed to generate AI notice securely' }, { status: 500 });
+        console.error(`AI Generation Failed for ${targetDoc}:`, err.message);
+        return NextResponse.json({ error: err.message }, { status: 500 });
       }
     }
 
     // Advanced Mock for MVP Delivery Reliability
-    const currentYear = new Date().getFullYear();
     const defaultAmountText = amount ? `Rs. ${amount}/-` : 'the relevant amount';
-    
-    const mockLegalNotice = `LEGAL NOTICE\n\nDate: ${new Date().toLocaleDateString('en-IN')}\n\nTo,\n${receiverName || 'The Concerned Party'}\n\nSub: Legal Notice for ${issueType}\n\nUnder instructions from and on behalf of my client ${senderName}, I hereby serve upon you the following legal notice:\n\n1. That my client engaged your services/purchased for ${serviceDetails || 'the agreed purpose'}.\n2. That despite taking the payment of ${defaultAmountText} on ${paymentDate || 'agreed dates'}, you have failed to deliver on your promises by ${deliveryDate || 'the agreed timeframe'}.\n3. ${description || 'You have engaged in unfair trade practices and deficiency of service.'}\n4. You are hereby called upon to address this grievance within 15 days of receiving this notice, failing which my client shall be constrained to initiate civil and criminal proceedings against you under the applicable laws of India at your cost and consequences.\n\nYours faithfully,\n\nAdvocate for ${senderName}`;
-    
-    const mockWhatsappMessage = `Dear ${receiverName},\n\nThis is regarding the ${issueType} for ${serviceDetails}. I had paid ${defaultAmountText} on ${paymentDate}, but the commitment for ${deliveryDate} was not met.\n\n${description ? description.substring(0, 100) + '...' : ''}\n\nPlease resolve this issue and process the requested refund/delivery within 3 days to avoid formal legal action. I hope we can resolve this amicably.\n\nRegards,\n${senderName}`;
-    
-    const mockComplaintDraft = `BEFORE THE DISTRICT CONSUMER DISPUTES REDRESSAL COMMISSION\n\nIN THE MATTER OF:\n${senderName} ... Complainant\n\nVERSUS\n\n${receiverName} ... Opposite Party\n\nCOMPLAINT UNDER SECTION 35 OF THE CONSUMER PROTECTION ACT, 2019\n\nMOST RESPECTFULLY SHOWETH:\n1. That the Complainant is a consumer who engaged the services of the Opposite Party for ${serviceDetails}.\n2. That the Opposite Party has committed deficiency in service relating to ${issueType}.\n3. That the complainant paid ${defaultAmountText} on ${paymentDate}.\n4. Cause of action arose when Opposite Party failed to deliver by ${deliveryDate}.\n\nPRAYER:\nIn view of the above facts, it is prayed that the Opposite Party be directed to refund the amount along with 18% interest and compensation for mental agony.\n\nDate: ____________\nPlace: ____________\nComplainant: ${senderName}`;
+    let mockResult = '';
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    if (targetDoc === 'legalNotice') {
+      mockResult = `LEGAL NOTICE\n\nDate: ${new Date().toLocaleDateString('en-IN')}\n\nTo,\n${receiverName}\n\nSub: Legal Notice for ${issueType}\n\n${senderType === 'lawyer' ? `Under instructions from and on behalf of my client ${senderName}, I, Advocate ${lawyerName}, hereby serve upon you...` : `I, ${senderName}, hereby serve upon you the following legal notice:`}\n\n1. That I/we engaged your services for ${serviceDetails}.\n2. That payment of ${defaultAmountText} was made on ${paymentDate}.\n3. Despite delivery date of ${deliveryDate}, no service was provided.\n4. Ultimatum: 15 days for refund or face legal action.`;
+    } else if (targetDoc === 'whatsappMessage') {
+      mockResult = `Final Warning regarding ${issueType}. Amount: ${defaultAmountText}. Resolve within 48 hours to avoid formal court proceedings. - ${senderName}`;
+    } else {
+      mockResult = `BEFORE THE DISTRICT CONSUMER COMMISSION\n\n${senderName} vs ${receiverName}\n\nComplaint for Deficiency in Service regarding ${serviceDetails}.`;
+    }
 
-    return NextResponse.json({
-      legalNotice: mockLegalNotice,
-      whatsappMessage: mockWhatsappMessage,
-      complaintDraft: mockComplaintDraft
-    });
+    await new Promise(resolve => setTimeout(resolve, 800));
+    return NextResponse.json({ [targetDoc]: mockResult });
 
   } catch (error) {
     console.error("Error generating notice:", error);

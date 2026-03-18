@@ -14,10 +14,11 @@ export default function Home() {
   
   const [loading, setLoading] = useState(false);
   const [generatedData, setGeneratedData] = useState<{
-    legalNotice: string;
-    whatsappMessage: string;
-    complaintDraft: string;
+    legalNotice?: string;
+    whatsappMessage?: string;
+    complaintDraft?: string;
   } | null>(null);
+  const [lastFormData, setLastFormData] = useState<NoticeFormData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -39,6 +40,7 @@ export default function Home() {
     setError(null);
     setSuccessMsg(null);
     setGeneratedData(null);
+    setLastFormData(formData);
     setProgress(5);
     setLoadingStep(0);
     
@@ -59,7 +61,7 @@ export default function Home() {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, targetDoc: 'legalNotice' }),
       });
 
       if (!res.ok) {
@@ -72,8 +74,8 @@ export default function Home() {
       }
       
       setProgress(100);
-      setGeneratedData(data);
-      setSuccessMsg('Legal Notice drafted successfully!');
+      setGeneratedData({ legalNotice: data.legalNotice });
+      setSuccessMsg('Legal Notice drafted successfully! Other drafts will load on click.');
       
       // Scroll to result smoothly
       setTimeout(() => {
@@ -237,9 +239,9 @@ export default function Home() {
           </Box>
         )}
 
-        {generatedData && !loading && (
+        {generatedData && !loading && lastFormData && (
           <Box mt={5}>
-            <NoticeOutput data={generatedData} />
+            <NoticeOutput initialData={generatedData} formData={lastFormData} />
           </Box>
         )}
       </Container>

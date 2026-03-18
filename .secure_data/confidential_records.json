@@ -277,5 +277,22 @@
       "description": "The photographer took the advance but did not show up on the wedding day. Phone is switched off."
     },
     "status": "draft_generated"
+  },
+  {
+    "id": "9f90a562-f84b-4fd4-a152-025dfb1ca367",
+    "timestamp": "2026-03-18T17:39:45.752Z",
+    "confidentialData": {
+      "senderType": "self",
+      "lawyerName": "",
+      "issueType": "Service Delay",
+      "senderName": "Rahul Verma",
+      "receiverName": "DreamShot Studio Pvt Ltd",
+      "serviceDetails": "Wedding Photography and Videography",
+      "amount": "50000",
+      "paymentDate": "2025-10-01",
+      "deliveryDate": "2025-11-15",
+      "description": "The photographer took the advance but did not show up on the wedding day. Phone is switched off."
+    },
+    "status": "draft_generated"
   }
 ]
