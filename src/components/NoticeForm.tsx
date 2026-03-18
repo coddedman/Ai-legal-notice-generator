@@ -127,6 +127,7 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
                color="secondary"
                startIcon={<Wand2 size={16} />}
                onClick={fillDemoData}
+               disabled={loading}
                sx={{ ml: 2, borderRadius: 2, textTransform: 'none', minWidth: '140px' }}
              >
                Try Demo Data
@@ -145,7 +146,7 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
               control={control}
               rules={{ required: 'Please select an issue type' }}
               render={({ field }) => (
-                <FormControl fullWidth error={!!errors.issueType}>
+                <FormControl fullWidth error={!!errors.issueType} disabled={loading}>
                   <InputLabel id="issue-type-label">Issue Type *</InputLabel>
                   <Select labelId="issue-type-label" label="Issue Type *" {...field}>
                     {ISSUE_TYPES.map((type) => (
@@ -169,6 +170,7 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
                   placeholder="e.g. Wedding Photography Services, Laptop Repair"
                   error={!!errors.serviceDetails}
                   helperText={errors.serviceDetails?.message}
+                  disabled={loading}
                 />
               )}
             />
@@ -187,6 +189,7 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
                   rows={4}
                   error={!!errors.description}
                   helperText={errors.description?.message}
+                  disabled={loading}
                 />
               )}
             />
@@ -211,6 +214,7 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
                   }}
                   error={!!errors.amount}
                   helperText={errors.amount?.message}
+                  disabled={loading}
                 />
               )}
             />
@@ -229,6 +233,7 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
                       InputLabelProps={{ shrink: true }}
                       error={!!errors.paymentDate}
                       helperText={errors.paymentDate?.message}
+                      disabled={loading}
                     />
                   )}
                 />
@@ -247,6 +252,7 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
                       InputLabelProps={{ shrink: true }}
                       error={!!errors.deliveryDate}
                       helperText={errors.deliveryDate?.message}
+                      disabled={loading}
                     />
                   )}
                 />
@@ -270,7 +276,7 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
                 name="senderType"
                 control={control}
                 render={({ field }) => (
-                  <FormControl component="fieldset">
+                  <FormControl component="fieldset" disabled={loading}>
                     <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>Who is drafting this Notice?</Typography>
                     <RadioGroup row {...field}>
                       <FormControlLabel value="self" control={<Radio size="small" />} label="I am the client (Drafting myself)" />
@@ -295,6 +301,7 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
                       placeholder="e.g. Adv. R.K. Sharma"
                       error={!!errors.lawyerName}
                       helperText={errors.lawyerName?.message}
+                      disabled={loading}
                     />
                   )}
                 />
@@ -314,6 +321,7 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
                       label={currentSenderType === 'lawyer' ? "Client's Full Name *" : "Your Full Name *"}
                       error={!!errors.senderName}
                       helperText={errors.senderName?.message}
+                      disabled={loading}
                     />
                   )}
                 />
@@ -330,6 +338,7 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
                       label="Receiver Name (Vendor/Company) *"
                       error={!!errors.receiverName}
                       helperText={errors.receiverName?.message}
+                      disabled={loading}
                     />
                   )}
                 />
@@ -371,6 +380,7 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
             <Button
               variant="contained"
               onClick={handleNext}
+              disabled={loading}
               endIcon={<ArrowRight size={18} />}
               sx={{ px: 4, borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
             >
