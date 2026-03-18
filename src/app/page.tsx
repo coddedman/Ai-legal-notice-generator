@@ -20,12 +20,40 @@ export default function Home() {
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [loadingStep, setLoadingStep] = useState(0);
+
+  const loadingMessages = [
+    "Analyzing dispute and context...",
+    "Identifying relevant Indian Laws (IPC, Section 420, Consumer Act)...",
+    "Checking legal precedents and deficiency patterns...",
+    "Drafting your formal Legal Notice...",
+    "Drafting first-person WhatsApp demand...",
+    "Structuring the formal Court/Police complaint...",
+    "Refining legal terminology and consequences...",
+    "Finalizing all drafts for you..."
+  ];
 
   const handleGenerate = async (formData: NoticeFormData) => {
     setLoading(true);
     setError(null);
     setSuccessMsg(null);
     setGeneratedData(null);
+    setProgress(5);
+    setLoadingStep(0);
+    
+    // Simulate progress while waiting for AI
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 95) return prev;
+        const jump = Math.floor(Math.random() * 5) + 2;
+        return Math.min(prev + jump, 95);
+      });
+    }, 1200);
+
+    const messageInterval = setInterval(() => {
+      setLoadingStep((prev) => (prev < loadingMessages.length - 1 ? prev + 1 : prev));
+    }, 3000);
     
     try {
       const res = await fetch('/api/generate', {
@@ -43,6 +71,7 @@ export default function Home() {
          throw new Error(data.error);
       }
       
+      setProgress(100);
       setGeneratedData(data);
       setSuccessMsg('Legal Notice drafted successfully!');
       
@@ -55,6 +84,8 @@ export default function Home() {
       setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
+      clearInterval(progressInterval);
+      clearInterval(messageInterval);
     }
   };
 
@@ -155,14 +186,52 @@ export default function Home() {
         </Paper>
 
         {loading && (
-          <Box mt={6} display="flex" flexDirection="column" alignItems="center" className="animate-fade-in">
-            <CircularProgress size={40} thickness={4} sx={{ color: 'primary.main', mb: 3 }} />
-            <Box p={3} borderRadius={3} bgcolor={theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.02)'} border="1px solid" borderColor="divider">
-               <Typography variant="h6" color="text.primary" fontWeight={600} mb={1}>
-                 Drafting Official Notice
+          <Box mt={6} display="flex" flexDirection="column" alignItems="center" className="animate-fade-in" sx={{ width: '100%' }}>
+            <Box sx={{ width: '100%', mb: 4, position: 'relative' }}>
+               <Box 
+                 sx={{ 
+                   height: 10, 
+                   width: '100%', 
+                   bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                   borderRadius: 5,
+                   overflow: 'hidden'
+                 }}
+               >
+                 <Box 
+                   sx={{ 
+                     height: '100%', 
+                     width: `${progress}%`, 
+                     background: 'linear-gradient(90deg, #6366f1 0%, #a855f7 100%)',
+                     transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+                     boxShadow: '0 0 10px rgba(99, 102, 241, 0.5)'
+                   }} 
+                 />
+               </Box>
+               <Typography variant="caption" sx={{ mt: 1, display: 'block', textAlign: 'right', fontWeight: 600, color: 'primary.main', opacity: 0.8 }}>
+                 {progress}% Completed
                </Typography>
-               <Typography variant="body2" color="text.secondary">
-                 Our AI is formulating the exact legal terminology and consequences based on your detailed input...
+            </Box>
+
+            <Box 
+              p={4} 
+              borderRadius={4} 
+              bgcolor={theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.8)'} 
+              border="1px solid" 
+              borderColor="divider"
+              sx={{ 
+                width: '100%', 
+                textAlign: 'center',
+                boxShadow: theme.palette.mode === 'dark' ? '0 10px 30px rgba(0,0,0,0.3)' : '0 10px 30px rgba(99, 102, 241, 0.05)',
+                backdropFilter: 'blur(10px)'
+              }}
+            >
+               <CircularProgress size={32} thickness={5} sx={{ color: 'primary.main', mb: 3 }} />
+               <Typography variant="h6" color="text.primary" fontWeight={700} mb={1}>
+                 {loadingMessages[loadingStep]}
+               </Typography>
+               <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.8 }}>
+                 Our AI Senior Advocate is analyzing Indian Penal Code sections and formulating your official notice. 
+                 This usually takes 20-40 seconds for high-precision legal drafting.
                </Typography>
             </Box>
           </Box>
