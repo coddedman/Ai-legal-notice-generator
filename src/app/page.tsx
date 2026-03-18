@@ -35,6 +35,8 @@ export default function Home() {
     "Finalizing all drafts for you..."
   ];
 
+  const [minimized, setMinimized] = useState(false);
+
   const handleGenerate = async (formData: NoticeFormData) => {
     setLoading(true);
     setError(null);
@@ -76,6 +78,7 @@ export default function Home() {
       setProgress(100);
       setGeneratedData({ legalNotice: data.legalNotice });
       setSuccessMsg('Legal Notice drafted successfully! Other drafts will load on click.');
+      setMinimized(true); // MINIMIZE FORM ON SUCCESS
       
       // Scroll to result smoothly
       setTimeout(() => {
@@ -119,72 +122,91 @@ export default function Home() {
           zIndex: -1,
         }}
       />
-      <Box
-        sx={{
-          position: 'absolute',
-          bottom: '-20%',
-          right: '-10%',
-          width: '60vw',
-          height: '60vw',
-          background: 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, rgba(139,92,246,0) 70%)',
-          borderRadius: '50%',
-          zIndex: -1,
-        }}
-      />
       
-      <Container maxWidth="md" sx={{ pt: { xs: 8, md: 12 } }}>
-        <Box textAlign="center" mb={6} className="animate-fade-in">
-          <Box display="flex" justifyContent="center" gap={2} mb={3}>
-            <Box p={2} borderRadius="50%" bgcolor="rgba(99,102,241,0.1)" color="primary.main">
-               <Scale size={32} />
+      <Container maxWidth="md" sx={{ pt: { xs: 8, md: 10 } }}>
+        {!minimized && (
+          <Box textAlign="center" mb={6} className="animate-fade-in">
+            <Box display="flex" justifyContent="center" gap={2} mb={3}>
+              <Box p={2} borderRadius="50%" bgcolor="rgba(99,102,241,0.1)" color="primary.main">
+                 <Scale size={32} />
+              </Box>
+              <Box p={2} borderRadius="50%" bgcolor="rgba(16,185,129,0.1)" color="success.main">
+                 <ShieldCheck size={32} />
+              </Box>
+              <Box p={2} borderRadius="50%" bgcolor="rgba(139,92,246,0.1)" color="secondary.main">
+                 <FileSignature size={32} />
+              </Box>
             </Box>
-            <Box p={2} borderRadius="50%" bgcolor="rgba(16,185,129,0.1)" color="success.main">
-               <ShieldCheck size={32} />
-            </Box>
-            <Box p={2} borderRadius="50%" bgcolor="rgba(139,92,246,0.1)" color="secondary.main">
-               <FileSignature size={32} />
-            </Box>
+            <Typography
+              variant="h1"
+              component="h1"
+              sx={{
+                fontWeight: 800,
+                mb: 2,
+                background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #fff 0%, #cbd5e1 100%)' : 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontSize: { xs: '2.5rem', md: '4rem' }
+              }}
+            >
+              AI Legal Notice Generator
+            </Typography>
+            <Typography variant="h6" color="text.secondary" sx={{ maxWidth: '600px', mx: 'auto', fontWeight: 400, opacity: 0.8 }}>
+              Empowering individuals and SMEs across India. Instantly generate perfectly formatted
+              legal notices with professional AI drafting.
+            </Typography>
           </Box>
-          <Typography
-            variant="h1"
-            component="h1"
-            sx={{
-              fontWeight: 800,
-              mb: 2,
-              background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #fff 0%, #cbd5e1 100%)' : 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              fontSize: { xs: '2.5rem', md: '4rem' }
-            }}
-          >
-            AI Legal Notice Generator
-          </Typography>
-          <Typography variant="h6" color="text.secondary" sx={{ maxWidth: '600px', mx: 'auto', fontWeight: 400, opacity: 0.8 }}>
-            Empowering individuals and SMEs across India. Instantly generate perfectly formatted
-            legal notices, consumer court complaints, and WhatsApp demands.
-          </Typography>
-        </Box>
+        )}
 
         <Paper 
           elevation={0}
           className="glass-panel animate-fade-in"
           sx={{ 
-            p: { xs: 3, md: 5 }, 
+            p: minimized ? 2 : { xs: 3, md: 5 }, 
             borderRadius: 4,
-            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-            '&:hover': {
-              boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
-            }
+            transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+            mb: 4,
+            border: '1px solid',
+            borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+            boxShadow: theme.palette.mode === 'dark' ? '0 10px 40px rgba(0,0,0,0.4)' : '0 10px 40px rgba(0,0,0,0.05)'
           }}
         >
-          <Typography variant="h5" color="text.primary" fontWeight="600" mb={1} display="flex" alignItems="center" gap={1}>
-             Draft Your Notice
-          </Typography>
-          <Typography variant="body2" color="text.secondary" mb={4}>
-            Fill in the details below. Our AI will automatically generate culturally and legally appropriate Indian drafts for you.
-          </Typography>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Box>
+              <Typography variant={minimized ? "h6" : "h5"} color="text.primary" fontWeight="600" display="flex" alignItems="center" gap={1}>
+                {minimized ? 'Input Details (Review)' : 'Draft Your Notice'}
+              </Typography>
+              {!minimized && (
+                <Typography variant="body2" color="text.secondary">
+                  Fill in the details below. Our AI will automatically generate culturally and legally appropriate Indian drafts for you.
+                </Typography>
+              )}
+            </Box>
+            {minimized && (
+               <Box 
+                 component="button" 
+                 onClick={() => setMinimized(false)}
+                 sx={{ 
+                   bgcolor: 'primary.main', 
+                   color: 'white', 
+                   px: 2, 
+                   py: 1, 
+                   borderRadius: 2, 
+                   border: 'none', 
+                   cursor: 'pointer',
+                   fontWeight: 600,
+                   fontSize: '0.875rem',
+                   '&:hover': { bgcolor: 'primary.dark' }
+                 }}
+               >
+                 Edit Details
+               </Box>
+            )}
+          </Box>
           
-          <NoticeForm onSubmit={handleGenerate} loading={loading} />
+          <Box sx={{ mt: minimized ? 0 : 4, height: minimized ? 0 : 'auto', overflow: 'hidden', opacity: minimized ? 0 : 1, transition: 'all 0.3s' }}>
+            <NoticeForm onSubmit={handleGenerate} loading={loading} initialData={lastFormData || undefined} />
+          </Box>
         </Paper>
 
         {loading && (

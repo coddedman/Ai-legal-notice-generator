@@ -49,11 +49,12 @@ export interface NoticeFormData {
 interface Props {
   onSubmit: (data: NoticeFormData) => void;
   loading: boolean;
+  initialData?: NoticeFormData;
 }
 
 const steps = ['Dispute Details', 'Reference Evidence', 'Financials & Dates', 'Party Information'];
 
-export default function NoticeForm({ onSubmit, loading }: Props) {
+export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
   const theme = useTheme();
   const [activeStep, setActiveStep] = useState(0);
 
@@ -63,9 +64,10 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
     trigger,
     setValue,
     watch,
+    reset,
     formState: { errors },
   } = useForm<NoticeFormData>({
-    defaultValues: {
+    defaultValues: initialData || {
       senderType: 'self',
       lawyerName: '',
       issueType: '',
@@ -80,6 +82,10 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
     },
     mode: 'onTouched'
   });
+
+  React.useEffect(() => {
+    if (initialData) reset(initialData);
+  }, [initialData, reset]);
 
   const [uploading, setUploading] = useState(false);
 
@@ -125,6 +131,7 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
     setValue('amount', '50000', { shouldValidate: true });
     setValue('paymentDate', '2025-10-01', { shouldValidate: true });
     setValue('deliveryDate', '2025-11-15', { shouldValidate: true });
+    setValue('evidenceText', '--- WhatsApp Log ---\nRahul: "Is the shoot confirmed for tomorrow morning at the Taj Hotel?"\nDreamShot: "Yes absolutely. Our team will be there at 8am. Dont worry."\n... next day ...\nRahul: "Where are you guys? It is 9am. Please respond."\nRahul: "Please pick up. This is very unprofessional."', { shouldValidate: true });
     setValue('senderName', 'Rahul Verma', { shouldValidate: true });
     setValue('receiverName', 'DreamShot Studio Pvt Ltd', { shouldValidate: true });
   };
