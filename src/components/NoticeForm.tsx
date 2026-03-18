@@ -22,7 +22,7 @@ import {
   FormControlLabel,
   useTheme
 } from '@mui/material';
-import { Send as SendIcon, ArrowRight, ArrowLeft, Wand2, Info, Paperclip, FileCheck, MapPin } from 'lucide-react';
+import { Send as SendIcon, ArrowRight, ArrowLeft, Wand2, Info, Paperclip, FileCheck, MapPin, Image as ImageIcon, Trash2 } from 'lucide-react';
 
 const ISSUE_TYPES = [
   'Fraud',
@@ -47,6 +47,8 @@ export interface NoticeFormData {
   deliveryDate: string;
   description: string;
   evidenceText?: string;
+  lawyerLogo?: string;   // NEW: Base64 logo
+  lawyerStamp?: string;  // NEW: Base64 stamp
 }
 
 interface Props {
@@ -85,6 +87,8 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
       deliveryDate: '',
       description: '',
       evidenceText: '',
+      lawyerLogo: '',
+      lawyerStamp: '',
     },
     mode: 'onTouched'
   });
@@ -377,22 +381,80 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
             
             {currentSenderType === 'lawyer' && (
               <Box className="animate-fade-in" display="flex" flexDirection="column" gap={3}>
-                <Controller
-                  name="lawyerName"
-                  control={control}
-                  rules={{ required: 'Advocate Name is required' }}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label="Advocate / Lawyer Name *"
-                      placeholder="e.g. Adv. R.K. Sharma"
-                      error={!!errors.lawyerName}
-                      helperText={errors.lawyerName?.message}
-                      disabled={loading}
-                    />
-                  )}
-                />
+                <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} gap={2} alignItems="flex-start">
+                    <Box flex={1}>
+                        <Controller
+                          name="lawyerName"
+                          control={control}
+                          rules={{ required: 'Advocate Name is required' }}
+                          render={({ field }) => (
+                            <TextField
+                              {...field}
+                              fullWidth
+                              label="Advocate / Lawyer Name *"
+                              placeholder="e.g. Adv. R.K. Sharma"
+                              error={!!errors.lawyerName}
+                              helperText={errors.lawyerName?.message}
+                              disabled={loading}
+                            />
+                          )}
+                        />
+                    </Box>
+                    
+                    {/* LOGO & STAMP UPLOADS */}
+                    <Box display="flex" gap={1.5} sx={{ mt: { xs: 0, md: 0.5 }, p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 2, bgcolor: 'rgba(0,0,0,0.02)' }}>
+                        <Box textAlign="center">
+                           <input accept="image/*" id="logo-upload" type="file" style={{ display: 'none' }} 
+                             onChange={(e) => {
+                               const file = e.target.files?.[0];
+                               if (file) {
+                                 const reader = new FileReader();
+                                 reader.onload = (ev) => setValue('lawyerLogo', ev.target?.result as string);
+                                 reader.readAsDataURL(file);
+                               }
+                             }} 
+                           />
+                           <label htmlFor="logo-upload">
+                             <Tooltip title={watch('lawyerLogo') ? "Update Logo" : "Upload Firm Logo"}>
+                               <IconButton component="span" size="small" sx={{ 
+                                 bgcolor: watch('lawyerLogo') ? 'rgba(99,102,241,0.1)' : 'transparent',
+                                 border: '1px dashed',
+                                 borderColor: watch('lawyerLogo') ? 'primary.main' : 'divider'
+                               }}>
+                                 <ImageIcon size={18} color={watch('lawyerLogo') ? "#6366f1" : "inherit"} />
+                               </IconButton>
+                             </Tooltip>
+                           </label>
+                           <Typography variant="caption" sx={{ display: 'block', fontSize: '9px', fontWeight: 600, mt: 0.5 }}>LOGO</Typography>
+                        </Box>
+
+                        <Box textAlign="center">
+                           <input accept="image/*" id="stamp-upload" type="file" style={{ display: 'none' }} 
+                             onChange={(e) => {
+                               const file = e.target.files?.[0];
+                               if (file) {
+                                 const reader = new FileReader();
+                                 reader.onload = (ev) => setValue('lawyerStamp', ev.target?.result as string);
+                                 reader.readAsDataURL(file);
+                               }
+                             }} 
+                           />
+                           <label htmlFor="stamp-upload">
+                             <Tooltip title={watch('lawyerStamp') ? "Update Stamp" : "Upload Official Stamp"}>
+                               <IconButton component="span" size="small" sx={{ 
+                                 bgcolor: watch('lawyerStamp') ? 'rgba(16,185,129,0.1)' : 'transparent',
+                                 border: '1px dashed',
+                                 borderColor: watch('lawyerStamp') ? 'success.main' : 'divider'
+                               }}>
+                                 <FileCheck size={18} color={watch('lawyerStamp') ? "#10b981" : "inherit"} />
+                               </IconButton>
+                             </Tooltip>
+                           </label>
+                           <Typography variant="caption" sx={{ display: 'block', fontSize: '9px', fontWeight: 600, mt: 0.5 }}>STAMP</Typography>
+                        </Box>
+                    </Box>
+                </Box>
+
                 <Controller
                   name="lawyerAddress"
                   control={control}

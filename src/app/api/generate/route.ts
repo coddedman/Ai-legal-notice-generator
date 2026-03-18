@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs';
 import path from 'path';
 
@@ -7,7 +6,6 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      issueType,
       senderName,
       senderAddress,
       receiverName,

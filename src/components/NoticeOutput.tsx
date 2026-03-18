@@ -131,19 +131,32 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
     const pageHeight = doc.internal.pageSize.getHeight();
     const maxLineWidth = pageWidth - margin * 2;
     
+    let cursorY = 20;
+
+    // Add Firm Logo if available
+    if (formData.lawyerLogo) {
+       try {
+         doc.addImage(formData.lawyerLogo, 'PNG', margin, 15, 25, 25);
+         cursorY = 45; // Move cursor down after logo
+       } catch (e) {
+         console.error('PDF Logo Error:', e);
+       }
+    }
+
     // Add professional header
     doc.setFont("times", "bold");
     doc.setFontSize(16);
-    doc.text(title.toUpperCase(), pageWidth / 2, 20, { align: 'center' });
+    doc.text(title.toUpperCase(), pageWidth / 2, cursorY, { align: 'center' });
     
+    cursorY += 5;
     doc.setLineWidth(0.5);
-    doc.line(margin, 25, pageWidth - margin, 25);
+    doc.line(margin, cursorY, pageWidth - margin, cursorY);
     
     doc.setFont("times", "normal");
     doc.setFontSize(12);
     
+    cursorY += 10;
     const lines = doc.splitTextToSize(content, maxLineWidth);
-    let cursorY = 35;
     let pageCount = 1;
 
     const addFooter = (pNum: number) => {
@@ -164,6 +177,19 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
         cursorY += 7;
     }
     
+    // Add Stamp if available (at the end)
+    if (formData.lawyerStamp) {
+       if (cursorY > pageHeight - 50) {
+          doc.addPage();
+          cursorY = 25;
+       }
+       try {
+         doc.addImage(formData.lawyerStamp, 'PNG', margin, cursorY + 5, 35, 35);
+       } catch (e) {
+         console.error('PDF Stamp Error:', e);
+       }
+    }
+
     addFooter(pageCount);
     doc.save(`${title.replace(/\s+/g, '_')}.pdf`);
   };

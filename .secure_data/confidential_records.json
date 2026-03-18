@@ -889,5 +889,10 @@
     "id": "42838c53-4ed2-4deb-aae6-ffcc80ff4060",
     "timestamp": "2026-03-18T19:01:50.712Z",
     "status": "request_complaintDraft"
+  },
+  {
+    "id": "b1c1f320-b3ea-4daa-99f4-f94dc4f1d18e",
+    "timestamp": "2026-03-18T19:06:49.041Z",
+    "status": "request_legalNotice"
   }
 ]
