@@ -16,7 +16,10 @@ import {
   StepLabel,
   InputAdornment,
   IconButton,
-  Tooltip
+  Tooltip,
+  RadioGroup,
+  Radio,
+  FormControlLabel
 } from '@mui/material';
 import { Send as SendIcon, ArrowRight, ArrowLeft, Wand2, Info } from 'lucide-react';
 
@@ -29,6 +32,8 @@ const ISSUE_TYPES = [
 ];
 
 export interface NoticeFormData {
+  senderType: 'self' | 'lawyer';
+  lawyerName?: string;
   issueType: string;
   senderName: string;
   receiverName: string;
@@ -54,9 +59,12 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
     handleSubmit,
     trigger,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<NoticeFormData>({
     defaultValues: {
+      senderType: 'self',
+      lawyerName: '',
       issueType: '',
       senderName: '',
       receiverName: '',
@@ -83,11 +91,14 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
     }
   };
 
+  const currentSenderType = watch('senderType');
+
   const handleBack = () => {
     setActiveStep((prev) => prev - 1);
   };
 
   const fillDemoData = () => {
+    setValue('senderType', 'self', { shouldValidate: true });
     setValue('issueType', 'Service Delay', { shouldValidate: true });
     setValue('serviceDetails', 'Wedding Photography and Videography', { shouldValidate: true });
     setValue('description', 'The photographer took the advance but did not show up on the wedding day. Phone is switched off.', { shouldValidate: true });
@@ -253,17 +264,54 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
                  Your details are completely secure and used strictly to generate the drafts.
                </Typography>
             </Box>
+            
+            <Box bgcolor="background.paper" p={2} borderRadius={2} border="1px solid" borderColor="divider">
+              <Controller
+                name="senderType"
+                control={control}
+                render={({ field }) => (
+                  <FormControl component="fieldset">
+                    <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>Who is drafting this Notice?</Typography>
+                    <RadioGroup row {...field}>
+                      <FormControlLabel value="self" control={<Radio size="small" />} label="I am the client (Drafting myself)" />
+                      <FormControlLabel value="lawyer" control={<Radio size="small" />} label="I am a Lawyer (Drafting for my client)" />
+                    </RadioGroup>
+                  </FormControl>
+                )}
+              />
+            </Box>
+            
+            {currentSenderType === 'lawyer' && (
+              <Box className="animate-fade-in">
+                <Controller
+                  name="lawyerName"
+                  control={control}
+                  rules={{ required: 'Lawyer Name is required if you are drafting for a client' }}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      label="Advocate / Lawyer Name *"
+                      placeholder="e.g. Adv. R.K. Sharma"
+                      error={!!errors.lawyerName}
+                      helperText={errors.lawyerName?.message}
+                    />
+                  )}
+                />
+              </Box>
+            )}
+
             <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={3}>
               <Box flex={1}>
                 <Controller
                   name="senderName"
                   control={control}
-                  rules={{ required: 'Sender Name is required' }}
+                  rules={{ required: currentSenderType === 'lawyer' ? 'Client Name is required' : 'Sender Name is required' }}
                   render={({ field }) => (
                     <TextField
                       {...field}
                       fullWidth
-                      label="Sender Name (Your Name) *"
+                      label={currentSenderType === 'lawyer' ? "Client's Full Name *" : "Your Full Name *"}
                       error={!!errors.senderName}
                       helperText={errors.senderName?.message}
                     />

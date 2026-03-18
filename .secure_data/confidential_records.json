@@ -28,5 +28,67 @@
       "description": "they took paymet now denying service"
     },
     "status": "draft_generated"
+  },
+  {
+    "id": "36922262-c150-484c-9bcc-e15f1ac7c4ff",
+    "timestamp": "2026-03-18T17:23:30.063Z",
+    "confidentialData": {
+      "issueType": "Fraud",
+      "senderName": "raja",
+      "receiverName": "blushing bride",
+      "serviceDetails": "wedding photography",
+      "amount": "45000",
+      "paymentDate": "2026-03-19",
+      "deliveryDate": "2026-04-17",
+      "description": "PACKAGE HEER \nBoth side\n\nINR 2,50,000\nCandid Photography 3 Days\n(Photo Shooting By Certified Photographer)\nCinematography 2 days\n(Film Shooting By Certified Master Cinematographer)\nTraditional Photography 5 days\nTraditional HD Videography 5 days\nBridal Session\nGetting Ready Shoot\nDrone Wedding Day\n\nPHOTO\nUsb Of All Images\nPrivate Online Gallery\nProfessionally-Edited High-Resolution Pictures\nPHOTO ALBUM\npremium 2 Custom Albums 12x30\n30 Sheets each\n\nFILM\n2 Reels\n6 - 8 mins Highlight / Teaser \nUpto 120 mins HD Wedding Film\nAll Master Raw Uncut footage\n\n\n\nTeam \n20 tilak\nTraditional photo \nTraditional video\n\n24 jan eng\nPax 200\nCandid photography \nCinematography\nTraditional photography \nTraditional videos \n\n26 haldi  both side\nTraditional photo\nTraditional videos \n\n27 mehdi\nCandid photography \nTraditional photography \nTraditional videos \n\n28 wedding pax 700\nCandid photography  this was agreed and now after engagement they delivered substandard quakity and now denying sevice when issue raised \n"
+    },
+    "status": "draft_generated"
+  },
+  {
+    "id": "bbf41995-ba23-4431-9ae0-245ea24607ac",
+    "timestamp": "2026-03-18T17:24:16.822Z",
+    "confidentialData": {
+      "issueType": "Fraud",
+      "senderName": "raja",
+      "receiverName": "blushing bride",
+      "serviceDetails": "wedding photography",
+      "amount": "45000",
+      "paymentDate": "2026-03-19",
+      "deliveryDate": "2026-04-17",
+      "description": "PACKAGE HEER \nBoth side\n\nINR 2,50,000\nCandid Photography 3 Days\n(Photo Shooting By Certified Photographer)\nCinematography 2 days\n(Film Shooting By Certified Master Cinematographer)\nTraditional Photography 5 days\nTraditional HD Videography 5 days\nBridal Session\nGetting Ready Shoot\nDrone Wedding Day\n\nPHOTO\nUsb Of All Images\nPrivate Online Gallery\nProfessionally-Edited High-Resolution Pictures\nPHOTO ALBUM\npremium 2 Custom Albums 12x30\n30 Sheets each\n\nFILM\n2 Reels\n6 - 8 mins Highlight / Teaser \nUpto 120 mins HD Wedding Film\nAll Master Raw Uncut footage\n\n\n\nTeam \n20 tilak\nTraditional photo \nTraditional video\n\n24 jan eng\nPax 200\nCandid photography \nCinematography\nTraditional photography \nTraditional videos \n\n26 haldi  both side\nTraditional photo\nTraditional videos \n\n27 mehdi\nCandid photography \nTraditional photography \nTraditional videos \n\n28 wedding pax 700\nCandid photography  this was agreed and now after engagement they delivered substandard quakity and now denying sevice when issue raised \n"
+    },
+    "status": "draft_generated"
+  },
+  {
+    "id": "561e46a1-9169-4f93-b049-71458d983bfd",
+    "timestamp": "2026-03-18T17:24:31.155Z",
+    "confidentialData": {
+      "issueType": "Service Delay",
+      "senderName": "Rahul Verma",
+      "receiverName": "DreamShot Studio Pvt Ltd",
+      "serviceDetails": "Wedding Photography and Videography",
+      "amount": "50000",
+      "paymentDate": "2025-10-01",
+      "deliveryDate": "2025-11-15",
+      "description": "The photographer took the advance but did not show up on the wedding day. Phone is switched off."
+    },
+    "status": "draft_generated"
+  },
+  {
+    "id": "11837a3f-38c0-4b2b-b2a0-db76939b2813",
+    "timestamp": "2026-03-18T17:28:47.010Z",
+    "confidentialData": {
+      "senderType": "self",
+      "lawyerName": "",
+      "issueType": "Service Delay",
+      "senderName": "Rahul Verma",
+      "receiverName": "DreamShot Studio Pvt Ltd",
+      "serviceDetails": "Wedding Photography and Videography",
+      "amount": "50000",
+      "paymentDate": "2025-10-01",
+      "deliveryDate": "2025-11-15",
+      "description": "The photographer took the advance but did not show up on the wedding day. Phone is switched off."
+    },
+    "status": "draft_generated"
   }
 ]

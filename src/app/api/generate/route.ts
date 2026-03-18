@@ -14,6 +14,8 @@ export async function POST(req: Request) {
       paymentDate,
       deliveryDate,
       description,
+      senderType,
+      lawyerName,
     } = body;
 
     // --- BFF Architecture: Securely store confidential information server-side ---
@@ -50,66 +52,74 @@ export async function POST(req: Request) {
     const apiKey = process.env.OPENROUTER_API_KEY;
 
     if (apiKey) {
-      // Implement OpenRouter/Groq API Call
       // Implement OpenRouter/Groq API Call with an advanced, highly-analytical prompt
       const prompt = `You are a highly experienced Indian Senior Advocate (Lawyer). Analyze the following dispute and draft a highly detailed, professional, and legally sound set of documents.
         
         CLIENT DETAILS:
-        - Sender (Our Client): ${senderName}
+        - Drafting Party: ${senderType === 'lawyer' ? `Advocate ${lawyerName}` : 'The Client Themselves (Pro Se)'}
+        - Sender (The Aggrieved Client): ${senderName}
         - Receiver (Opposite Party): ${receiverName}
         - Issue Category: ${issueType}
         - Service/Product: ${serviceDetails}
-        - Amount Involved: ₹${amount}
+        - Amount Involved: INR ${amount}
         - Payment Date: ${paymentDate}
         - Agreed Delivery Date: ${deliveryDate}
         
         CLIENT'S RAW DESCRIPTION OF THE INCIDENT:
-        """${description}"""
+        ${description}
 
         YOUR TASK:
         Do not just repeat the details. Analyze the situation. If they took payment and are denying service, identify the potential offenses under Indian Law (e.g., Cheating under Section 415/420 IPC, Criminal Breach of Trust under Section 405/406 IPC, or Deficiency of Service/Unfair Trade Practice under the Consumer Protection Act, 2019).
 
         Draft the following THREE documents:
         
-        1. 'legalNotice': A comprehensive, formidable, and highly structured Formal Legal Notice. It must include:
-           - Proper header (Date, To, Sub, Under Instructions from).
-           - Detailed chronological facts of the case constructed from the client's description.
-           - Explicit mention of the legal violations (cite specific IPC or Consumer Protection Act sections where relevant based on your analysis).
-           - A firm demand for the refund of the amount, plus additional compensation for mental agony, harassment, and legal notice charges.
-           - A strict 15-day ultimatum before initiating civil and criminal proceedings.
+        1. "legalNotice": A comprehensive, formidable, and highly structured Formal Legal Notice. 
+           CRITICAL TONE ADJUSTMENT: If the Drafting Party is an Advocate, the notice MUST begin with "Under instructions from and on behalf of my client ${senderName}, I, Advocate ${lawyerName}, hereby serve upon you the following legal notice...". If drafted by the client themselves, it MUST begin strictly in the first person: "I, ${senderName}, hereby serve upon you the following legal notice...".
+           It must include proper header, facts, explicit legal sections, firm demand for refund + compensation + legal fees within a strict 15-day ultimatum.
+        
+        2. "whatsappMessage": A stern, professionally intimidating WhatsApp message summarizing the notice.
+        
+        3. "complaintDraft": A detailed Consumer Court OR Police Complaint draft covering cause of action and specific prayers.
 
-        2. 'whatsappMessage': A stern, professionally intimidating but WhatsApp-appropriate message summarizing the legal notice, mentioning the financial loss, the breach, and warning of impending legal action if not resolved within 3-5 days.
-
-        3. 'complaintDraft': A detailed Consumer Court / District Commission draft OR Police Complaint draft (whichever fits the severity). It must be formatted properly with standard headers (e.g., BEFORE THE DISTRICT CONSUMER DISPUTES REDRESSAL COMMISSION), identifying the Complainant and Opposite Party, outlining the jurisdiction, the cause of action, and the specific prayers (refund + interest + compensation).
-
-        IMPORTANT: Output your response **STRICTLY** as a valid JSON object. Do not include markdown codeblocks (\`\`\`json) or any outside text. The JSON must have exactly these keys: "legalNotice", "whatsappMessage", "complaintDraft". 
-        `;
+        Output ONLY a pure JSON object. No markdown syntax. Exactly three string keys: "legalNotice", "whatsappMessage", "complaintDraft".`;
         
       try {
         const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${apiKey}`,
+            'Authorization': 'Bearer ' + apiKey,
             'Content-Type': 'application/json',
+            'HTTP-Referer': 'http://localhost:3000',
+            'X-Title': 'AI Legal Notice Generator'
           },
           body: JSON.stringify({
-            model: 'meta-llama/llama-3-8b-instruct:free',
+            model: 'meta-llama/llama-3.3-70b-instruct:free',
             messages: [{ role: 'user', content: prompt }]
           })
         });
         
+        if (!aiResponse.ok) {
+           const errorData = await aiResponse.text();
+           throw new Error('OpenRouter API Error: ' + aiResponse.status + ' ' + errorData);
+        }
+
         const data = await aiResponse.json();
-        
-        let content = data.choices?.[0]?.message?.content;
+        const content = data.choices?.[0]?.message?.content;
         
         if (content) {
-            // strip potential markdown codeblocks
-            content = content.replace(/```json/g, '').replace(/```/g, '').trim();
-            const parsed = JSON.parse(content);
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+               throw new Error('AI did not return a valid JSON format.');
+            }
+            const parsed = JSON.parse(jsonMatch[0]);
+            console.log('[BFF] AI Successfully Generated Legal Documents.');
             return NextResponse.json(parsed);
+        } else {
+             throw new Error('Empty response from AI');
         }
-      } catch (err) {
-        console.error("AI Generation Failed, falling back to mock", err);
+      } catch (err: any) {
+        console.error('Strict AI Generation Failed:', err.message);
+        return NextResponse.json({ error: err.message || 'Failed to generate AI notice securely' }, { status: 500 });
       }
     }
 
