@@ -113,6 +113,31 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
     reader.readAsText(file);
   };
 
+  // 🖼️ Smart image compressor - resizes & re-encodes to JPEG
+  const compressImage = (src: string, maxDimension = 256, quality = 0.82): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      img.onload = () => {
+        let { width, height } = img;
+        // Scale down proportionally if larger than maxDimension
+        if (width > maxDimension || height > maxDimension) {
+          const ratio = Math.min(maxDimension / width, maxDimension / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(src); // fallback: return original
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => resolve(src); // fallback on error
+      img.src = src;
+    });
+  };
+
   const handleNext = async () => {
     let fieldsToValidate: (keyof NoticeFormData)[] = [];
     if (activeStep === 0) {
@@ -405,13 +430,16 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
                     <Box display="flex" gap={1.5} sx={{ mt: { xs: 0, md: 0.5 }, p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 2, bgcolor: 'rgba(0,0,0,0.02)' }}>
                         <Box textAlign="center">
                            <input accept="image/*" id="logo-upload" type="file" style={{ display: 'none' }} 
-                             onChange={(e) => {
+                             onChange={async (e) => {
                                const file = e.target.files?.[0];
-                               if (file) {
-                                 const reader = new FileReader();
-                                 reader.onload = (ev) => setValue('lawyerLogo', ev.target?.result as string);
-                                 reader.readAsDataURL(file);
-                               }
+                               if (!file) return;
+                               const reader = new FileReader();
+                               reader.onload = async (ev) => {
+                                 const raw = ev.target?.result as string;
+                                 const compressed = await compressImage(raw, 256, 0.82);
+                                 setValue('lawyerLogo', compressed);
+                               };
+                               reader.readAsDataURL(file);
                              }} 
                            />
                            {watch('lawyerLogo') ? (
@@ -435,13 +463,16 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
 
                         <Box textAlign="center">
                            <input accept="image/*" id="stamp-upload" type="file" style={{ display: 'none' }} 
-                             onChange={(e) => {
+                             onChange={async (e) => {
                                const file = e.target.files?.[0];
-                               if (file) {
-                                 const reader = new FileReader();
-                                 reader.onload = (ev) => setValue('lawyerStamp', ev.target?.result as string);
-                                 reader.readAsDataURL(file);
-                               }
+                               if (!file) return;
+                               const reader = new FileReader();
+                               reader.onload = async (ev) => {
+                                 const raw = ev.target?.result as string;
+                                 const compressed = await compressImage(raw, 200, 0.82);
+                                 setValue('lawyerStamp', compressed);
+                               };
+                               reader.readAsDataURL(file);
                              }} 
                            />
                            {watch('lawyerStamp') ? (
