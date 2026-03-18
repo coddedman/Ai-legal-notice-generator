@@ -35,9 +35,12 @@ const ISSUE_TYPES = [
 export interface NoticeFormData {
   senderType: 'self' | 'lawyer';
   lawyerName?: string;
+  lawyerAddress?: string; // NEW
   issueType: string;
   senderName: string;
+  senderAddress: string;  // NEW
   receiverName: string;
+  receiverAddress: string; // NEW
   serviceDetails: string;
   amount: string;
   paymentDate: string;
@@ -70,9 +73,12 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
     defaultValues: initialData || {
       senderType: 'self',
       lawyerName: '',
+      lawyerAddress: '',
       issueType: '',
       senderName: '',
+      senderAddress: '',
       receiverName: '',
+      receiverAddress: '',
       serviceDetails: '',
       amount: '',
       paymentDate: '',
@@ -366,11 +372,11 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
             </Box>
             
             {currentSenderType === 'lawyer' && (
-              <Box className="animate-fade-in">
+              <Box className="animate-fade-in" display="flex" flexDirection="column" gap={3}>
                 <Controller
                   name="lawyerName"
                   control={control}
-                  rules={{ required: 'Lawyer Name is required if you are drafting for a client' }}
+                  rules={{ required: 'Advocate Name is required' }}
                   render={({ field }) => (
                     <TextField
                       {...field}
@@ -383,44 +389,101 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
                     />
                   )}
                 />
+                <Controller
+                  name="lawyerAddress"
+                  control={control}
+                  rules={{ required: 'Advocate Address is required' }}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      label="Advocate Chamber / Office Address *"
+                      placeholder="e.g. Chamber No. 42, Civil Courts, New Delhi"
+                      multiline
+                      rows={2}
+                      error={!!errors.lawyerAddress}
+                      helperText={errors.lawyerAddress?.message}
+                      disabled={loading}
+                    />
+                  )}
+                />
               </Box>
             )}
 
-            <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={3}>
-              <Box flex={1}>
-                <Controller
-                  name="senderName"
-                  control={control}
-                  rules={{ required: currentSenderType === 'lawyer' ? 'Client Name is required' : 'Sender Name is required' }}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label={currentSenderType === 'lawyer' ? "Client's Full Name *" : "Your Full Name *"}
-                      error={!!errors.senderName}
-                      helperText={errors.senderName?.message}
-                      disabled={loading}
-                    />
-                  )}
-                />
-              </Box>
-              <Box flex={1}>
-                <Controller
-                  name="receiverName"
-                  control={control}
-                  rules={{ required: 'Receiver Name is required' }}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label="Receiver Name (Vendor/Company) *"
-                      error={!!errors.receiverName}
-                      helperText={errors.receiverName?.message}
-                      disabled={loading}
-                    />
-                  )}
-                />
-              </Box>
+            <Typography variant="subtitle2" color="primary.main" fontWeight={600}>Principal Party Details</Typography>
+
+            <Box display="flex" flexDirection="column" gap={3}>
+               <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
+                  <Controller
+                    name="senderName"
+                    control={control}
+                    rules={{ required: 'Name is required' }}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label={currentSenderType === 'lawyer' ? "Client's Full Name *" : "Your Full Name *"}
+                        error={!!errors.senderName}
+                        helperText={errors.senderName?.message}
+                        disabled={loading}
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="senderAddress"
+                    control={control}
+                    rules={{ required: 'Address is required' }}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Source Address *"
+                        placeholder="Current residential or business address"
+                        multiline
+                        rows={1}
+                        error={!!errors.senderAddress}
+                        helperText={errors.senderAddress?.message}
+                        disabled={loading}
+                      />
+                    )}
+                  />
+               </Box>
+
+               <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
+                  <Controller
+                    name="receiverName"
+                    control={control}
+                    rules={{ required: 'Opposing Party Name is required' }}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Opposing Party Name (Vendor/Company) *"
+                        error={!!errors.receiverName}
+                        helperText={errors.receiverName?.message}
+                        disabled={loading}
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="receiverAddress"
+                    control={control}
+                    rules={{ required: 'Opposing Party Address is required' }}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Delivery Address (Recipient) *"
+                        placeholder="Registered office or contact address of the opposite party"
+                        multiline
+                        rows={1}
+                        error={!!errors.receiverAddress}
+                        helperText={errors.receiverAddress?.message}
+                        disabled={loading}
+                      />
+                    )}
+                  />
+               </Box>
             </Box>
           </Box>
         )}

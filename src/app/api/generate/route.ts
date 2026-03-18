@@ -9,12 +9,14 @@ export async function POST(req: NextRequest) {
     const {
       issueType,
       senderName,
+      senderAddress,
       receiverName,
+      receiverAddress,
       amount,
-
       description,
       senderType,
       lawyerName,
+      lawyerAddress,
       evidenceText,
       targetDoc = 'legalNotice',
       refinement,
@@ -23,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     const isLawyer = !!lawyerName && senderType === 'lawyer';
 
-    // --- Secure Storage Logic (kept for architecture integrity) ---
+    // --- Secure Storage Logic ---
     try {
       const dataDir = path.join(process.cwd(), '.secure_data');
       if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
@@ -39,25 +41,25 @@ export async function POST(req: NextRequest) {
       Draft a highly professional, authoritative, and legally sound ${targetDoc} based on the role specified below.
       
       CONTEXT:
-      - Sender: ${senderName}
-      - Opposing Party: ${receiverName}
+      - Sender: ${senderName} (Address: ${senderAddress})
+      - Opposing Party: ${receiverName} (Address: ${receiverAddress})
       - Disputed Amount: Rs. ${amount}
       - Default Description: ${description}
+      ${isLawyer ? `- Advocate: ${lawyerName} (Office: ${lawyerAddress})` : ''}
       ${evidenceText ? `\nREFERENCE EVIDENCE: "${evidenceText}"` : ''}
       
       YOUR SPECIFIC TASK:
       ${refinement ? `REFINE the existing ${targetDoc} provided below based on: "${refinement}"\nEXISTING: ${currentDraft}` :
-        `IDENTITIY FOR DRAFTING: 
+        `IDENTITIY & HEADING RULES: 
          ${isLawyer
-          ? `You are Advocate ${lawyerName}. The notice MUST be in the third person on behalf of ${senderName}. Use preamble: "Under instructions from my client ${senderName}, I, Advocate ${lawyerName}, hereby..."`
-          : `You are ${senderName} drafting this FOR YOURSELF. You MUST use the FIRST PERSON ("I, ${senderName}, hereby..."). Do NOT mention any external lawyer name.`}
+          ? `You are Advocate ${lawyerName} with office at ${lawyerAddress}. The notice MUST be in the third person on behalf of ${senderName}. 
+             PREAMBLE: "Under instructions from my client ${senderName}, resident of ${senderAddress}, I, Advocate ${lawyerName}, hereby serve you with this formal Legal Notice..."`
+          : `You are ${senderName} (Resident of ${senderAddress}) drafting this FOR YOURSELF. You MUST use the FIRST PERSON ("I, ${senderName}, hereby...").`}
          
-         Document Structure:
-         - Formal Header with Date and Recipient.
-         - SUBJECT: Legal Notice regarding ${issueType}.
-         - 1. FACTS OF THE CASE.
-         - 2. LEGAL VIOLATIONS (BNS 2023).
-         - 3. ULTIMATUM & SIGNATURE.`}
+         DOCUMENT HEADER:
+         - Place the Sender's (Advocate or Self) name and address at the top.
+         - Place the Recipient's (${receiverName}) name and address below it.
+         - Include a formal Date and SUBJECT line.`}
       
       GUIDELINES:
       - Citations: Bharatiya Nyaya Sanhita (BNS) 2023.

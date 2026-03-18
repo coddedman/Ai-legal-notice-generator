@@ -879,5 +879,15 @@
     "id": "713b39f8-5c48-4bfc-b12d-86faa0e83117",
     "timestamp": "2026-03-18T19:01:09.991Z",
     "status": "request_legalNotice"
+  },
+  {
+    "id": "ed96a132-21fc-46c0-9520-4f0497259b82",
+    "timestamp": "2026-03-18T19:01:34.237Z",
+    "status": "request_whatsappMessage"
+  },
+  {
+    "id": "42838c53-4ed2-4deb-aae6-ffcc80ff4060",
+    "timestamp": "2026-03-18T19:01:50.712Z",
+    "status": "request_complaintDraft"
   }
 ]
