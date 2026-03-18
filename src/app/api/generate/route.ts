@@ -80,21 +80,48 @@ export async function POST(req: NextRequest) {
     const apiKey = process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY;
     if (!apiKey) throw new Error('API Key missing. Please set GEMINI_API_KEY.');
 
-    // Using FETCH for maximum control and speed (bypassing SDK 404s)
-    // Primary model: gemini-flash-latest (Confirmed available for this project key)
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+    // Model waterfall — tries each in order, skips on 429 quota errors
+    const models = [
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-latest',
+      'gemini-flash-latest',
+    ];
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          maxOutputTokens: 3000,
-          temperature: 0.7,
-        }
-      })
-    });
+    let response: Response | null = null;
+    let triedModels: string[] = [];
+
+    for (const model of models) {
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const attempt = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 3000, temperature: 0.7 }
+        })
+      });
+
+      triedModels.push(model);
+
+      if (attempt.status === 429) {
+        console.warn(`[BFF] Model ${model} quota exceeded, trying next...`);
+        continue; // try next model
+      }
+
+      if (attempt.status === 404) {
+        console.warn(`[BFF] Model ${model} not found, trying next...`);
+        continue;
+      }
+
+      response = attempt;
+      console.log(`[BFF] Using model: ${model}`);
+      break;
+    }
+
+    if (!response) {
+      throw new Error(`All Gemini models quota exceeded for today. Please try again tomorrow or upgrade your Gemini API plan at ai.google.dev. Tried: ${triedModels.join(', ')}`);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
