@@ -84,23 +84,45 @@ export async function POST(req: Request) {
         Output ONLY a pure JSON object. No markdown syntax. Exactly three string keys: "legalNotice", "whatsappMessage", "complaintDraft".`;
         
       try {
-        const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + apiKey,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'http://localhost:3000',
-            'X-Title': 'AI Legal Notice Generator'
-          },
-          body: JSON.stringify({
-            model: 'meta-llama/llama-3.3-70b-instruct:free',
-            messages: [{ role: 'user', content: prompt }]
-          })
-        });
+        let fetchSuccess = false;
+        let aiResponse;
+        let errorData = '';
         
-        if (!aiResponse.ok) {
-           const errorData = await aiResponse.text();
-           throw new Error('OpenRouter API Error: ' + aiResponse.status + ' ' + errorData);
+        // Use OpenRouter's auto-router for free models, plus confirmed reliable backups
+        const fallbackModels = [
+          'openrouter/free',
+          'google/gemma-3-27b-it:free',
+          'nousresearch/hermes-3-llama-3.1-405b:free',
+          'meta-llama/llama-3.3-70b-instruct:free'
+        ];
+        
+        for (const targetModel of fallbackModels) {
+           console.log('[BFF] Attempting generation with ' + targetModel + '...');
+           aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': 'Bearer ' + apiKey,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'http://localhost:3000',
+                'X-Title': 'AI Legal Notice Generator'
+              },
+              body: JSON.stringify({
+                model: targetModel,
+                messages: [{ role: 'user', content: prompt }]
+              })
+           });
+           
+           if (aiResponse.ok) {
+              fetchSuccess = true;
+              break; // exit loop
+           } else {
+              errorData = await aiResponse.text();
+              console.warn('[BFF] Model ' + targetModel + ' failed. Trying next -> ' + errorData);
+           }
+        }
+        
+        if (!fetchSuccess || !aiResponse) {
+           throw new Error('OpenRouter API Error: Models exhausted. Final error: ' + errorData);
         }
 
         const data = await aiResponse.json();

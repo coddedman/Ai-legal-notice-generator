@@ -9,7 +9,7 @@ import { PaletteMode } from '@mui/material';
 export const ColorModeContext = createContext({ toggleColorMode: () => {} });
 
 export default function ThemeRegistry({ children }: { children: React.ReactNode }) {
-  const [mode, setMode] = useState<PaletteMode>('dark');
+  const [mode, setMode] = useState<PaletteMode>('light');
   
   // Apply data-theme attribute for any possible global CSS reliance
   useEffect(() => {
