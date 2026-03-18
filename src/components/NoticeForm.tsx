@@ -19,9 +19,10 @@ import {
   Tooltip,
   RadioGroup,
   Radio,
-  FormControlLabel
+  FormControlLabel,
+  useTheme
 } from '@mui/material';
-import { Send as SendIcon, ArrowRight, ArrowLeft, Wand2, Info } from 'lucide-react';
+import { Send as SendIcon, ArrowRight, ArrowLeft, Wand2, Info, Paperclip, FileCheck } from 'lucide-react';
 
 const ISSUE_TYPES = [
   'Fraud',
@@ -42,6 +43,7 @@ export interface NoticeFormData {
   paymentDate: string;
   deliveryDate: string;
   description: string;
+  evidenceText?: string;
 }
 
 interface Props {
@@ -49,9 +51,10 @@ interface Props {
   loading: boolean;
 }
 
-const steps = ['Dispute Details', 'Financials & Dates', 'Party Information'];
+const steps = ['Dispute Details', 'Reference Evidence', 'Financials & Dates', 'Party Information'];
 
 export default function NoticeForm({ onSubmit, loading }: Props) {
+  const theme = useTheme();
   const [activeStep, setActiveStep] = useState(0);
 
   const {
@@ -73,15 +76,32 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
       paymentDate: '',
       deliveryDate: '',
       description: '',
+      evidenceText: '',
     },
     mode: 'onTouched'
   });
+
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      setValue('evidenceText', text);
+      setUploading(false);
+    };
+    reader.readAsText(file);
+  };
 
   const handleNext = async () => {
     let fieldsToValidate: (keyof NoticeFormData)[] = [];
     if (activeStep === 0) {
       fieldsToValidate = ['issueType', 'serviceDetails', 'description'];
-    } else if (activeStep === 1) {
+    } else if (activeStep === 2) {
       fieldsToValidate = ['amount', 'paymentDate', 'deliveryDate'];
     }
 
@@ -196,8 +216,59 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
           </Box>
         )}
 
-        {/* STEP 1: Financials */}
+        {/* STEP 1: Reference Evidence */}
         {activeStep === 1 && (
+          <Box className="animate-fade-in" display="flex" flexDirection="column" gap={3}>
+            <Box p={3} border="2px dashed" borderColor="divider" borderRadius={3} textAlign="center" bgcolor="rgba(99, 102, 241, 0.02)">
+              <Paperclip size={32} color={theme.palette.text.secondary} style={{ marginBottom: 12, opacity: 0.5 }} />
+              <Typography variant="h6" fontWeight={600} mb={1}>Upload Reference Evidence</Typography>
+              <Typography variant="body2" color="text.secondary" mb={3}>
+                Upload a WhatsApp chat export (.txt), email thread, or any document. 
+                Our AI will analyze the facts to make your notice more accurate.
+              </Typography>
+              
+              <input
+                accept=".txt,.csv,.json,.md,.html"
+                style={{ display: 'none' }}
+                id="evidence-upload"
+                type="file"
+                onChange={handleFileUpload}
+              />
+              <label htmlFor="evidence-upload">
+                <Button variant="outlined" component="span" disabled={loading || uploading} startIcon={uploading ? <Wand2 className="animate-spin" size={18} /> : <Paperclip size={18} />}>
+                  {uploading ? 'Analyzing File...' : 'Attach Reference File'}
+                </Button>
+              </label>
+              
+              {watch('evidenceText') && (
+                <Box mt={2} display="flex" alignItems="center" justifyContent="center" gap={1} color="success.main">
+                  <FileCheck size={18} />
+                  <Typography variant="caption" fontWeight={600}>Evidence Analyzed Successfully ({watch('evidenceText')?.length} chars)</Typography>
+                </Box>
+              )}
+            </Box>
+
+            <Controller
+              name="evidenceText"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  label="Additional Evidence Summary (Optional)"
+                  placeholder="Or paste transaction IDs, specific dates, or copy-pasted chat snippets here..."
+                  multiline
+                  rows={3}
+                  disabled={loading}
+                  helperText="This helps the AI cite specific facts and promises made by the opposite party."
+                />
+              )}
+            />
+          </Box>
+        )}
+
+        {/* STEP 2: Financials */}
+        {activeStep === 2 && (
           <Box className="animate-fade-in" display="flex" flexDirection="column" gap={3}>
             <Controller
               name="amount"
@@ -261,8 +332,8 @@ export default function NoticeForm({ onSubmit, loading }: Props) {
           </Box>
         )}
 
-        {/* STEP 2: Party Details */}
-        {activeStep === 2 && (
+        {/* STEP 3: Party Details */}
+        {activeStep === 3 && (
           <Box className="animate-fade-in" display="flex" flexDirection="column" gap={3}>
             <Box display="flex" alignItems="center" bgcolor="rgba(99, 102, 241, 0.1)" p={2} borderRadius={2} mb={1}>
                <Info size={20} color="#6366f1" style={{ marginRight: 8 }} />

@@ -16,6 +16,7 @@ export async function POST(req: Request) {
       description,
       senderType,
       lawyerName,
+      evidenceText,
       targetDoc = 'legalNotice' // default to legalNotice if not specified
     } = body;
 
@@ -73,19 +74,24 @@ export async function POST(req: Request) {
         Analyze the following dispute and draft a highly detailed, professional, and legally sound ${targetDoc}.
         
         CONTEXT:
-        - Drafting Party: ${isLawyer ? `Advocate ${lawyerName}` : 'The Client Themmselves (Pro Se)'}
+        - Drafting Party: ${isLawyer ? `Advocate ${lawyerName}` : 'The Client Themselves (Pro Se)'}
         - Aggrieved Party: ${senderName}
         - Opposite Party: ${receiverName}
         - Issue: ${issueType} (${serviceDetails})
         - Stake: INR ${amount}
         - Key Dates: Paid on ${paymentDate}, Due on ${deliveryDate}
         
-        DESCRIPTION: "${description}"
+        DESCRIPTION OF INCIDENT: "${description}"
+        ${evidenceText ? `FACTUAL EVIDENCE CONTEXT (Analysing Chat/Docs): "${evidenceText}"` : ''}
 
         YOUR SPECIFIC TASK:
         ${docTask}
 
-        IMPORTANT: If it is a "legalNotice", include explicit legal sections (Facts, Legal Grounds, Ultimatum) citing relevant Indian laws (e.g. IPC 420, Consumer Protection Act 2019).
+        LEGAL STANDARDS TO FOLLOW:
+        1. Use CURRENT Indian Statues. Prioritize **Bharatiya Nyaya Sanhita (BNS)** over IPC where applicable (e.g. BNS Section 318 for Cheating).
+        2. STRUCTURE: Use STRICT **Numbered Paragraphs** (1, 2, 3...) for the entire body of the ${targetDoc}.
+        3. TONE: Professional, firm, and authoritative. Avoid generic placeholders.
+        4. If evidenceContext is provided, weave specific facts or quotes into the draft to increase credibility.
         
         OUTPUT FORMAT: Return ONLY a JSON object with a single key: "${targetDoc}". No markdown.`;
         
