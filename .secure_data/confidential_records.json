@@ -1,0 +1,32 @@
+[
+  {
+    "id": "92754def-3fcc-4866-b9c5-7dffbc2c0fc5",
+    "timestamp": "2026-03-18T17:19:56.170Z",
+    "confidentialData": {
+      "issueType": "Fraud",
+      "senderName": "raja",
+      "receiverName": "blushing bride",
+      "serviceDetails": "wedding photography",
+      "amount": "45000",
+      "paymentDate": "2026-03-19",
+      "deliveryDate": "2026-04-17",
+      "description": "they took paymet now denying service"
+    },
+    "status": "draft_generated"
+  },
+  {
+    "id": "d0e3eb52-3593-468e-b58e-2fe1fd4cc504",
+    "timestamp": "2026-03-18T17:20:25.734Z",
+    "confidentialData": {
+      "issueType": "Fraud",
+      "senderName": "raja",
+      "receiverName": "blushing bride",
+      "serviceDetails": "wedding photography",
+      "amount": "45000",
+      "paymentDate": "2026-03-19",
+      "deliveryDate": "2026-04-17",
+      "description": "they took paymet now denying service"
+    },
+    "status": "draft_generated"
+  }
+]

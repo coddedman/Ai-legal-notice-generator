@@ -51,15 +51,39 @@ export async function POST(req: Request) {
 
     if (apiKey) {
       // Implement OpenRouter/Groq API Call
-      const prompt = `Act as an Indian legal expert. Draft a formal legal notice based on the following details:\n
-        Issue Type: ${issueType}\n
-        Sender: ${senderName}\n
-        Receiver: ${receiverName}\n
-        Amount: ${amount}\n
-        Service Details: ${serviceDetails}\n
-        Description: ${description}\n\n
-        Ensure:\n- Professional legal tone\n- Clear demand and deadline\n- Indian legal context\n
-        Output ONLY a JSON object with 'legalNotice', 'whatsappMessage', 'complaintDraft' string keys without markdown formatting.`;
+      // Implement OpenRouter/Groq API Call with an advanced, highly-analytical prompt
+      const prompt = `You are a highly experienced Indian Senior Advocate (Lawyer). Analyze the following dispute and draft a highly detailed, professional, and legally sound set of documents.
+        
+        CLIENT DETAILS:
+        - Sender (Our Client): ${senderName}
+        - Receiver (Opposite Party): ${receiverName}
+        - Issue Category: ${issueType}
+        - Service/Product: ${serviceDetails}
+        - Amount Involved: ₹${amount}
+        - Payment Date: ${paymentDate}
+        - Agreed Delivery Date: ${deliveryDate}
+        
+        CLIENT'S RAW DESCRIPTION OF THE INCIDENT:
+        """${description}"""
+
+        YOUR TASK:
+        Do not just repeat the details. Analyze the situation. If they took payment and are denying service, identify the potential offenses under Indian Law (e.g., Cheating under Section 415/420 IPC, Criminal Breach of Trust under Section 405/406 IPC, or Deficiency of Service/Unfair Trade Practice under the Consumer Protection Act, 2019).
+
+        Draft the following THREE documents:
+        
+        1. 'legalNotice': A comprehensive, formidable, and highly structured Formal Legal Notice. It must include:
+           - Proper header (Date, To, Sub, Under Instructions from).
+           - Detailed chronological facts of the case constructed from the client's description.
+           - Explicit mention of the legal violations (cite specific IPC or Consumer Protection Act sections where relevant based on your analysis).
+           - A firm demand for the refund of the amount, plus additional compensation for mental agony, harassment, and legal notice charges.
+           - A strict 15-day ultimatum before initiating civil and criminal proceedings.
+
+        2. 'whatsappMessage': A stern, professionally intimidating but WhatsApp-appropriate message summarizing the legal notice, mentioning the financial loss, the breach, and warning of impending legal action if not resolved within 3-5 days.
+
+        3. 'complaintDraft': A detailed Consumer Court / District Commission draft OR Police Complaint draft (whichever fits the severity). It must be formatted properly with standard headers (e.g., BEFORE THE DISTRICT CONSUMER DISPUTES REDRESSAL COMMISSION), identifying the Complainant and Opposite Party, outlining the jurisdiction, the cause of action, and the specific prayers (refund + interest + compensation).
+
+        IMPORTANT: Output your response **STRICTLY** as a valid JSON object. Do not include markdown codeblocks (\`\`\`json) or any outside text. The JSON must have exactly these keys: "legalNotice", "whatsappMessage", "complaintDraft". 
+        `;
         
       try {
         const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
