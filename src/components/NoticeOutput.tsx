@@ -155,6 +155,24 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
     URL.revokeObjectURL(url);
   };
 
+  const addImageToPdf = (doc: jsPDF, src: string, x: number, y: number, w: number, h: number) => {
+    if (!src) return;
+    // Detect format from data URI
+    let fmt: string = 'PNG';
+    if (src.startsWith('data:image/jpeg') || src.startsWith('data:image/jpg')) fmt = 'JPEG';
+    else if (src.startsWith('data:image/png')) fmt = 'PNG';
+    else if (src.startsWith('data:image/webp')) fmt = 'WEBP';
+    try {
+      doc.addImage(src, fmt, x, y, w, h);
+    } catch {
+      // Fallback: try other formats
+      const fallbacks = ['PNG', 'JPEG', 'WEBP'].filter(f => f !== fmt);
+      for (const f of fallbacks) {
+        try { doc.addImage(src, f, x, y, w, h); return; } catch {}
+      }
+    }
+  };
+
   const handleDownloadPDF = (title: string, content: string) => {
     const doc = new jsPDF();
     const margin = 20;
@@ -166,11 +184,7 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
 
     // ---- LETTERHEAD ----
     if (formData.lawyerLogo) {
-      try {
-        doc.addImage(formData.lawyerLogo, 'JPEG', margin, cursorY, 28, 28);
-      } catch {
-        try { doc.addImage(formData.lawyerLogo, 'PNG', margin, cursorY, 28, 28); } catch {}
-      }
+      addImageToPdf(doc, formData.lawyerLogo, margin, cursorY, 28, 28);
     }
 
     // Lawyer/Sender name block (top right)
@@ -269,11 +283,7 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
         pageCount++;
         cursorY = 25;
       }
-      try {
-        doc.addImage(formData.lawyerStamp, 'PNG', margin, cursorY + 5, 38, 38);
-      } catch {
-        try { doc.addImage(formData.lawyerStamp, 'JPEG', margin, cursorY + 5, 38, 38); } catch {}
-      }
+      addImageToPdf(doc, formData.lawyerStamp, margin, cursorY + 5, 38, 38);
     }
 
     addFooter(pageCount);

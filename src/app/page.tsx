@@ -204,8 +204,10 @@ export default function Home() {
             )}
           </Box>
           
-          <Box sx={{ mt: minimized ? 0 : 4, height: minimized ? 0 : 'auto', overflow: 'hidden', opacity: minimized ? 0 : 1, transition: 'all 0.3s' }}>
-            <NoticeForm onSubmit={handleGenerate} loading={loading} initialData={lastFormData || undefined} />
+          <Box sx={{ mt: minimized ? 0 : 4 }}>
+            {!minimized && (
+              <NoticeForm onSubmit={handleGenerate} loading={loading} initialData={lastFormData || undefined} />
+            )}
           </Box>
         </Paper>
 
