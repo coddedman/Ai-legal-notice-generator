@@ -143,9 +143,9 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
     setValue('deliveryDate', '2025-11-15', { shouldValidate: true });
     setValue('evidenceText', '--- WhatsApp Log ---\nRahul: "Is the shoot confirmed for tomorrow morning at the Taj Hotel?"\nDreamShot: "Yes absolutely. Our team will be there at 8am. Dont worry."\n... next day ...\nRahul: "Where are you guys? It is 9am. Please respond."\nRahul: "Please pick up. This is very unprofessional."', { shouldValidate: true });
     setValue('senderName', 'Rahul Verma', { shouldValidate: true });
-    setValue('senderAddress', 'House No. 402, Lotus Boulevard, Sector 100, Noida, UP - 201301', { shouldValidate: true });
+    setValue('senderAddress', 'House No. 402, Lotus Boulevard, Sector 100\nNoida\nUttar Pradesh\n201301', { shouldValidate: true });
     setValue('receiverName', 'DreamShot Studio Pvt Ltd', { shouldValidate: true });
-    setValue('receiverAddress', 'Office 7, 3rd Floor, DLF Cyber City, Phase III, Gurgaon, Haryana - 122002', { shouldValidate: true });
+    setValue('receiverAddress', 'Office 7, 3rd Floor, DLF Cyber City, Phase III\nGurgaon\nHaryana\n122002', { shouldValidate: true });
     setValue('lawyerName', 'Adv. R.K. Singhania', { shouldValidate: true });
     setValue('lawyerAddress', 'Chamber 412, High Court of Delhi, New Delhi - 110003', { shouldValidate: true });
   };
@@ -489,19 +489,32 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
               </Box>
             )}
 
-            <Typography variant="subtitle2" color="primary.main" fontWeight={600}>Principal Party Details</Typography>
+            <Typography variant="subtitle2" color="primary.main" fontWeight={600} display="flex" alignItems="center" gap={1}>
+              <MapPin size={16} /> Principal Party Details
+            </Typography>
 
-            <Box display="flex" flexDirection="column" gap={3}>
-               <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
+            <Box display="flex" flexDirection={{ xs: 'column', lg: 'row' }} gap={2}>
+              
+              {/* SENDER CARD */}
+              <Box flex={1} sx={{ border: '1px solid', borderColor: 'primary.light', borderRadius: 3, overflow: 'hidden', opacity: loading ? 0.7 : 1 }}>
+                <Box sx={{ px: 2, py: 1.5, bgcolor: 'rgba(99,102,241,0.08)', borderBottom: '1px solid', borderColor: 'rgba(99,102,241,0.2)', display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main' }} />
+                  <Typography variant="caption" fontWeight={700} color="primary.main" letterSpacing={0.5}>
+                    {currentSenderType === 'lawyer' ? 'CLIENT (CLAIMANT)' : 'YOU (SENDER)'}
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <Controller
                     name="senderName"
                     control={control}
-                    rules={{ required: 'Name is required' }}
+                    rules={{ required: 'Full name is required' }}
                     render={({ field }) => (
                       <TextField
                         {...field}
                         fullWidth
+                        size="small"
                         label={currentSenderType === 'lawyer' ? "Client's Full Name *" : "Your Full Name *"}
+                        placeholder="e.g. Rahul Verma"
                         error={!!errors.senderName}
                         helperText={errors.senderName?.message}
                         disabled={loading}
@@ -511,36 +524,93 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
                   <Controller
                     name="senderAddress"
                     control={control}
-                    rules={{ required: 'Address is required' }}
+                    rules={{ required: 'Complete address is required' }}
                     render={({ field }) => (
-                      <TextField
-                        {...field}
-                        fullWidth
-                        label="Sender's Complete Address *"
-                        placeholder="House/Office No, Street, Sector, City, State, PIN"
-                        multiline
-                        rows={1}
-                        InputProps={{
-                          startAdornment: <InputAdornment position="start"><MapPin size={18} /></InputAdornment>,
-                        }}
-                        error={!!errors.senderAddress}
-                        helperText={errors.senderAddress?.message}
-                        disabled={loading}
-                      />
+                      <Box display="flex" flexDirection="column" gap={1.5}>
+                        <TextField
+                          size="small"
+                          fullWidth
+                          label="House / Flat / Office No. & Street *"
+                          placeholder="e.g. Flat 402, Lotus Apartments, MG Road"
+                          value={field.value?.split('\n')[0] || ''}
+                          onChange={(e) => {
+                            const parts = (field.value || '').split('\n');
+                            parts[0] = e.target.value;
+                            field.onChange(parts.join('\n'));
+                          }}
+                          InputProps={{ startAdornment: <InputAdornment position="start"><MapPin size={14} /></InputAdornment> }}
+                          disabled={loading}
+                          error={!!errors.senderAddress}
+                        />
+                        <Box display="flex" gap={1}>
+                          <TextField
+                            size="small"
+                            fullWidth
+                            label="City *"
+                            placeholder="e.g. Noida"
+                            value={field.value?.split('\n')[1] || ''}
+                            onChange={(e) => {
+                              const parts = (field.value || '\n\n').split('\n');
+                              parts[1] = e.target.value;
+                              field.onChange(parts.join('\n'));
+                            }}
+                            disabled={loading}
+                          />
+                          <TextField
+                            size="small"
+                            fullWidth
+                            label="State *"
+                            placeholder="e.g. UP"
+                            value={field.value?.split('\n')[2] || ''}
+                            onChange={(e) => {
+                              const parts = (field.value || '\n\n').split('\n');
+                              parts[2] = e.target.value;
+                              field.onChange(parts.join('\n'));
+                            }}
+                            disabled={loading}
+                          />
+                          <TextField
+                            size="small"
+                            sx={{ maxWidth: 100 }}
+                            label="PIN *"
+                            placeholder="110001"
+                            value={field.value?.split('\n')[3] || ''}
+                            onChange={(e) => {
+                              const parts = (field.value || '\n\n\n').split('\n');
+                              parts[3] = e.target.value;
+                              field.onChange(parts.join('\n'));
+                            }}
+                            inputProps={{ maxLength: 6 }}
+                            disabled={loading}
+                          />
+                        </Box>
+                        {errors.senderAddress && <Typography variant="caption" color="error">{errors.senderAddress.message}</Typography>}
+                      </Box>
                     )}
                   />
-               </Box>
+                </Box>
+              </Box>
 
-               <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
+              {/* RECEIVER CARD */}
+              <Box flex={1} sx={{ border: '1px solid', borderColor: 'error.light', borderRadius: 3, overflow: 'hidden', opacity: loading ? 0.7 : 1 }}>
+                <Box sx={{ px: 2, py: 1.5, bgcolor: 'rgba(239,68,68,0.06)', borderBottom: '1px solid', borderColor: 'rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'error.main' }} />
+                  <Typography variant="caption" fontWeight={700} color="error.main" letterSpacing={0.5}>
+                    OPPOSING PARTY (RECIPIENT)
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <Controller
                     name="receiverName"
                     control={control}
-                    rules={{ required: 'Opposing Party Name is required' }}
+                    rules={{ required: 'Opposing party name is required' }}
                     render={({ field }) => (
                       <TextField
                         {...field}
                         fullWidth
-                        label="Opposing Party Name (Vendor/Company) *"
+                        size="small"
+                        label="Vendor / Company / Person Name *"
+                        placeholder="e.g. DreamShot Studio Pvt Ltd"
                         error={!!errors.receiverName}
                         helperText={errors.receiverName?.message}
                         disabled={loading}
@@ -550,25 +620,73 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
                   <Controller
                     name="receiverAddress"
                     control={control}
-                    rules={{ required: 'Opposing Party Address is required' }}
+                    rules={{ required: 'Recipient address is required for service' }}
                     render={({ field }) => (
-                      <TextField
-                        {...field}
-                        fullWidth
-                        label="Recipient's Service Address *"
-                        placeholder="Registered Address where notice will be delivered"
-                        multiline
-                        rows={1}
-                        InputProps={{
-                          startAdornment: <InputAdornment position="start"><MapPin size={18} /></InputAdornment>,
-                        }}
-                        error={!!errors.receiverAddress}
-                        helperText={errors.receiverAddress?.message}
-                        disabled={loading}
-                      />
+                      <Box display="flex" flexDirection="column" gap={1.5}>
+                        <TextField
+                          size="small"
+                          fullWidth
+                          label="Registered Office / Shop Address *"
+                          placeholder="e.g. Ground Floor, DLF Cyber Hub, Gurgaon"
+                          value={field.value?.split('\n')[0] || ''}
+                          onChange={(e) => {
+                            const parts = (field.value || '').split('\n');
+                            parts[0] = e.target.value;
+                            field.onChange(parts.join('\n'));
+                          }}
+                          InputProps={{ startAdornment: <InputAdornment position="start"><MapPin size={14} /></InputAdornment> }}
+                          disabled={loading}
+                          error={!!errors.receiverAddress}
+                        />
+                        <Box display="flex" gap={1}>
+                          <TextField
+                            size="small"
+                            fullWidth
+                            label="City *"
+                            placeholder="e.g. Gurgaon"
+                            value={field.value?.split('\n')[1] || ''}
+                            onChange={(e) => {
+                              const parts = (field.value || '\n\n').split('\n');
+                              parts[1] = e.target.value;
+                              field.onChange(parts.join('\n'));
+                            }}
+                            disabled={loading}
+                          />
+                          <TextField
+                            size="small"
+                            fullWidth
+                            label="State *"
+                            placeholder="e.g. Haryana"
+                            value={field.value?.split('\n')[2] || ''}
+                            onChange={(e) => {
+                              const parts = (field.value || '\n\n').split('\n');
+                              parts[2] = e.target.value;
+                              field.onChange(parts.join('\n'));
+                            }}
+                            disabled={loading}
+                          />
+                          <TextField
+                            size="small"
+                            sx={{ maxWidth: 100 }}
+                            label="PIN *"
+                            placeholder="122002"
+                            value={field.value?.split('\n')[3] || ''}
+                            onChange={(e) => {
+                              const parts = (field.value || '\n\n\n').split('\n');
+                              parts[3] = e.target.value;
+                              field.onChange(parts.join('\n'));
+                            }}
+                            inputProps={{ maxLength: 6 }}
+                            disabled={loading}
+                          />
+                        </Box>
+                        {errors.receiverAddress && <Typography variant="caption" color="error">{errors.receiverAddress.message}</Typography>}
+                      </Box>
                     )}
                   />
-               </Box>
+                </Box>
+              </Box>
+
             </Box>
           </Box>
         )}

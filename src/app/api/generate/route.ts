@@ -23,6 +23,17 @@ export async function POST(req: NextRequest) {
 
     const isLawyer = !!lawyerName && senderType === 'lawyer';
 
+    // Format structured address (Street\nCity\nState\nPIN → readable string)
+    const formatAddr = (raw: string = '') => {
+      const parts = raw.split('\n').map(p => p.trim()).filter(Boolean);
+      if (parts.length >= 4) return `${parts[0]}, ${parts[1]}, ${parts[2]} - ${parts[3]}`;
+      return parts.join(', ');
+    };
+
+    const senderAddrFormatted = formatAddr(senderAddress);
+    const receiverAddrFormatted = formatAddr(receiverAddress);
+    const lawyerAddrFormatted = lawyerAddress || '';
+
     // --- Secure Storage Logic ---
     try {
       const dataDir = path.join(process.cwd(), '.secure_data');
@@ -39,20 +50,20 @@ export async function POST(req: NextRequest) {
       Draft a highly professional, authoritative, and legally sound ${targetDoc} based on the role specified below.
       
       CONTEXT:
-      - Sender: ${senderName} (Address: ${senderAddress})
-      - Opposing Party: ${receiverName} (Address: ${receiverAddress})
+      - Sender: ${senderName} (Address: ${senderAddrFormatted})
+      - Opposing Party: ${receiverName} (Address: ${receiverAddrFormatted})
       - Disputed Amount: Rs. ${amount}
       - Default Description: ${description}
-      ${isLawyer ? `- Advocate: ${lawyerName} (Office: ${lawyerAddress})` : ''}
+      ${isLawyer ? `- Advocate: ${lawyerName} (Office: ${lawyerAddrFormatted})` : ''}
       ${evidenceText ? `\nREFERENCE EVIDENCE: "${evidenceText}"` : ''}
       
       YOUR SPECIFIC TASK:
       ${refinement ? `REFINE the existing ${targetDoc} provided below based on: "${refinement}"\nEXISTING: ${currentDraft}` :
         `IDENTITIY & HEADING RULES: 
          ${isLawyer
-          ? `You are Advocate ${lawyerName} with office at ${lawyerAddress}. The notice MUST be in the third person on behalf of ${senderName}. 
-             PREAMBLE: "Under instructions from my client ${senderName}, resident of ${senderAddress}, I, Advocate ${lawyerName}, hereby serve you with this formal Legal Notice..."`
-          : `You are ${senderName} (Resident of ${senderAddress}) drafting this FOR YOURSELF. You MUST use the FIRST PERSON ("I, ${senderName}, hereby...").`}
+          ? `You are Advocate ${lawyerName} with office at ${lawyerAddrFormatted}. The notice MUST be in the third person on behalf of ${senderName}. 
+             PREAMBLE: "Under instructions from my client ${senderName}, resident of ${senderAddrFormatted}, I, Advocate ${lawyerName}, hereby serve you with this formal Legal Notice..."`
+          : `You are ${senderName} (Resident of ${senderAddrFormatted}) drafting this FOR YOURSELF. You MUST use the FIRST PERSON ("I, ${senderName}, hereby...").`}
          
          DOCUMENT HEADER:
          - Place the Sender's (Advocate or Self) name and address at the top.
