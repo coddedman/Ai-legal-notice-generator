@@ -414,18 +414,23 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
                                }
                              }} 
                            />
-                           <label htmlFor="logo-upload">
-                             <Tooltip title={watch('lawyerLogo') ? "Update Logo" : "Upload Firm Logo"}>
-                               <IconButton component="span" size="small" sx={{ 
-                                 bgcolor: watch('lawyerLogo') ? 'rgba(99,102,241,0.1)' : 'transparent',
-                                 border: '1px dashed',
-                                 borderColor: watch('lawyerLogo') ? 'primary.main' : 'divider'
-                               }}>
-                                 <ImageIcon size={18} color={watch('lawyerLogo') ? "#6366f1" : "inherit"} />
-                               </IconButton>
-                             </Tooltip>
-                           </label>
-                           <Typography variant="caption" sx={{ display: 'block', fontSize: '9px', fontWeight: 600, mt: 0.5 }}>LOGO</Typography>
+                           {watch('lawyerLogo') ? (
+                             <Box sx={{ position: 'relative', width: 52, height: 52, border: '2px solid', borderColor: 'primary.main', borderRadius: 1.5, overflow: 'hidden' }}>
+                               <img src={watch('lawyerLogo')} alt="Logo Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                               <Box sx={{ position: 'absolute', top: 0, right: 0, cursor: 'pointer', bgcolor: 'rgba(239,68,68,0.85)', borderRadius: '0 0 0 4px', p: 0.2 }} onClick={() => setValue('lawyerLogo', '')}>
+                                 <Trash2 size={10} color="white" />
+                               </Box>
+                             </Box>
+                           ) : (
+                             <label htmlFor="logo-upload">
+                               <Tooltip title="Upload Firm Logo (shown in header)">
+                                 <IconButton component="span" size="small" sx={{ bgcolor: 'transparent', border: '1px dashed', borderColor: 'divider', borderRadius: 1.5, width: 52, height: 52 }}>
+                                   <ImageIcon size={20} style={{ opacity: 0.4 }} />
+                                 </IconButton>
+                               </Tooltip>
+                             </label>
+                           )}
+                           <Typography variant="caption" sx={{ display: 'block', fontSize: '9px', fontWeight: 600, mt: 0.5, color: watch('lawyerLogo') ? 'primary.main' : 'text.secondary' }}>LOGO</Typography>
                         </Box>
 
                         <Box textAlign="center">
@@ -439,18 +444,23 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
                                }
                              }} 
                            />
-                           <label htmlFor="stamp-upload">
-                             <Tooltip title={watch('lawyerStamp') ? "Update Stamp" : "Upload Official Stamp"}>
-                               <IconButton component="span" size="small" sx={{ 
-                                 bgcolor: watch('lawyerStamp') ? 'rgba(16,185,129,0.1)' : 'transparent',
-                                 border: '1px dashed',
-                                 borderColor: watch('lawyerStamp') ? 'success.main' : 'divider'
-                               }}>
-                                 <FileCheck size={18} color={watch('lawyerStamp') ? "#10b981" : "inherit"} />
-                               </IconButton>
-                             </Tooltip>
-                           </label>
-                           <Typography variant="caption" sx={{ display: 'block', fontSize: '9px', fontWeight: 600, mt: 0.5 }}>STAMP</Typography>
+                           {watch('lawyerStamp') ? (
+                             <Box sx={{ position: 'relative', width: 52, height: 52, border: '2px solid', borderColor: 'success.main', borderRadius: 1.5, overflow: 'hidden' }}>
+                               <img src={watch('lawyerStamp')} alt="Stamp Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                               <Box sx={{ position: 'absolute', top: 0, right: 0, cursor: 'pointer', bgcolor: 'rgba(239,68,68,0.85)', borderRadius: '0 0 0 4px', p: 0.2 }} onClick={() => setValue('lawyerStamp', '')}>
+                                 <Trash2 size={10} color="white" />
+                               </Box>
+                             </Box>
+                           ) : (
+                             <label htmlFor="stamp-upload">
+                               <Tooltip title="Upload Official Stamp (shown at bottom)">
+                                 <IconButton component="span" size="small" sx={{ bgcolor: 'transparent', border: '1px dashed', borderColor: 'divider', borderRadius: 1.5, width: 52, height: 52 }}>
+                                   <FileCheck size={20} style={{ opacity: 0.4 }} />
+                                 </IconButton>
+                               </Tooltip>
+                             </label>
+                           )}
+                           <Typography variant="caption" sx={{ display: 'block', fontSize: '9px', fontWeight: 600, mt: 0.5, color: watch('lawyerStamp') ? 'success.main' : 'text.secondary' }}>STAMP</Typography>
                         </Box>
                     </Box>
                 </Box>

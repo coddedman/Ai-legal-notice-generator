@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useTheme } from '@mui/material/styles';
 import {
   Box,
@@ -11,8 +11,12 @@ import {
   Button,
   IconButton,
   Tooltip,
+  Chip,
 } from '@mui/material';
-import { FileText, MessageCircle, FilePenLine, Copy, Download, Loader2, Send, Sparkles } from 'lucide-react';
+import { 
+  FileText, MessageCircle, FilePenLine, Copy, Download, Loader2, Send, Sparkles, 
+  Pencil, CheckCircle2, X, RefreshCw, Share2
+} from 'lucide-react';
 import jsPDF from 'jspdf';
 import { NoticeFormData } from './NoticeForm';
 import { TextField, InputAdornment } from '@mui/material';
@@ -30,6 +34,7 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
   const theme = useTheme();
   const [tabIndex, setTabIndex] = useState(0);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [editMode, setEditMode] = useState<{ [key: string]: boolean }>({});
   
   const [docs, setDocs] = useState<{ [key: string]: string }>({
     legalNotice: initialData.legalNotice || '',
@@ -45,20 +50,19 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
 
   const [refinementInput, setRefinementInput] = useState('');
   const [fetchError, setFetchError] = useState<string | null>(null);
-
   const [loadingStep, setLoadingStep] = useState(0);
+
   const tabLoadingMessages = [
     "Analyzing specific context for this format...",
     "Applying professional legal tone...",
-    "Ensuring BNS compliance and citations...",
+    "Ensuring BNS 2023 compliance and citations...",
     "Formatting numbered paragraphs...",
-    "Finalizing specific prayer/ultimatum..."
+    "Finalizing prayer/ultimatum clause...",
   ];
 
   React.useEffect(() => {
     let interval: NodeJS.Timeout;
     const isAnyLoading = Object.values(docLoading).some(v => v);
-    
     if (isAnyLoading) {
       setLoadingStep(0);
       interval = setInterval(() => {
@@ -69,25 +73,16 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
   }, [docLoading]);
 
   const fetchDoc = async (target: string, refinement?: string) => {
-    if (!refinement && docs[target]) return; 
-
+    if (!refinement && docs[target]) return;
     setDocLoading(prev => ({ ...prev, [target]: true }));
     setFetchError(null);
-
     try {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          ...formData, 
-          targetDoc: target,
-          refinement: refinement,
-          currentDraft: docs[target]
-        }),
+        body: JSON.stringify({ ...formData, targetDoc: target, refinement, currentDraft: docs[target] }),
       });
-
       if (!res.ok) throw new Error(`Failed to process request for ${target}`);
-      
       const resData = await res.json();
       setDocs(prev => ({ ...prev, [target]: resData[target] }));
       if (refinement) setRefinementInput('');
@@ -96,6 +91,11 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
     } finally {
       setDocLoading(prev => ({ ...prev, [target]: false }));
     }
+  };
+
+  const handleRegenerate = (target: string) => {
+    setDocs(prev => ({ ...prev, [target]: '' }));
+    setTimeout(() => fetchDoc(target), 50);
   };
 
   const handleRefine = (e: React.FormEvent) => {
@@ -114,8 +114,8 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
 
   const tabs = [
     { id: 'legalNotice', label: 'Legal Notice', icon: <FileText size={18} />, content: docs.legalNotice, title: 'Formal Legal Notice' },
-    { id: 'whatsappMessage', label: 'WhatsApp Message', icon: <MessageCircle size={18} />, content: docs.whatsappMessage, title: 'WhatsApp Draft' },
-    { id: 'complaintDraft', label: 'Complaint Draft', icon: <FilePenLine size={18} />, content: docs.complaintDraft, title: 'Consumer Court/Police Draft' },
+    { id: 'whatsappMessage', label: 'WhatsApp', icon: <MessageCircle size={18} />, content: docs.whatsappMessage, title: 'WhatsApp Demand Draft' },
+    { id: 'complaintDraft', label: 'Complaint Draft', icon: <FilePenLine size={18} />, content: docs.complaintDraft, title: 'Consumer Court / Police Complaint' },
   ];
 
   const handleCopy = (index: number, content: string) => {
@@ -124,78 +124,195 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
+  const handleWhatsAppShare = (content: string) => {
+    const encoded = encodeURIComponent(content.substring(0, 1000)); // WhatsApp link truncates
+    window.open(`https://wa.me/?text=${encoded}`, '_blank');
+  };
+
+  const handleDownloadDocx = (title: string, content: string) => {
+    // Simple .doc (HTML blob) as a widely-supported approach
+    const html = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' 
+            xmlns:w='urn:schemas-microsoft-com:office:word'
+            xmlns='http://www.w3.org/TR/REC-html40'>
+      <head><meta charset='utf-8'><title>${title}</title>
+      <style>
+        body { font-family: 'Times New Roman', serif; font-size: 12pt; margin: 2cm; }
+        h1 { text-align: center; font-size: 14pt; text-transform: uppercase; }
+        p { line-height: 1.8; text-align: justify; }
+      </style></head>
+      <body>
+        <h1>${title}</h1>
+        <hr/>
+        ${content.split('\n').map(line => `<p>${line || '&nbsp;'}</p>`).join('')}
+      </body></html>`;
+    const blob = new Blob([html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title.replace(/\s+/g, '_')}.doc`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleDownloadPDF = (title: string, content: string) => {
     const doc = new jsPDF();
     const margin = 20;
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const maxLineWidth = pageWidth - margin * 2;
-    
-    let cursorY = 20;
 
-    // Add Firm Logo if available
+    let cursorY = 15;
+
+    // ---- LETTERHEAD ----
     if (formData.lawyerLogo) {
-       try {
-         doc.addImage(formData.lawyerLogo, 'PNG', margin, 15, 25, 25);
-         cursorY = 45; // Move cursor down after logo
-       } catch (e) {
-         console.error('PDF Logo Error:', e);
-       }
+      try {
+        doc.addImage(formData.lawyerLogo, 'JPEG', margin, cursorY, 28, 28);
+      } catch {
+        try { doc.addImage(formData.lawyerLogo, 'PNG', margin, cursorY, 28, 28); } catch {}
+      }
     }
 
-    // Add professional header
+    // Lawyer/Sender name block (top right)
+    const isLawyer = formData.senderType === 'lawyer';
+    const senderBlock = isLawyer
+      ? [`Adv. ${formData.lawyerName || ''}`, formData.lawyerAddress || '']
+      : [formData.senderName, formData.senderAddress || ''];
+
     doc.setFont("times", "bold");
-    doc.setFontSize(16);
-    doc.text(title.toUpperCase(), pageWidth / 2, cursorY, { align: 'center' });
-    
-    cursorY += 5;
-    doc.setLineWidth(0.5);
-    doc.line(margin, cursorY, pageWidth - margin, cursorY);
-    
+    doc.setFontSize(11);
+    doc.text(senderBlock[0].toUpperCase(), pageWidth - margin, cursorY + 5, { align: 'right' });
     doc.setFont("times", "normal");
-    doc.setFontSize(12);
-    
-    cursorY += 10;
+    doc.setFontSize(9);
+    const addrLines = doc.splitTextToSize(senderBlock[1], 80);
+    addrLines.forEach((line: string, i: number) => {
+      doc.text(line, pageWidth - margin, cursorY + 10 + (i * 5), { align: 'right' });
+    });
+
+    cursorY += formData.lawyerLogo ? 35 : 20;
+
+    // Divider
+    doc.setDrawColor(99, 102, 241);
+    doc.setLineWidth(0.8);
+    doc.line(margin, cursorY, pageWidth - margin, cursorY);
+    cursorY += 3;
+
+    // Recipient block
+    doc.setFont("times", "bold");
+    doc.setFontSize(10);
+    doc.text('TO:', margin, cursorY + 5);
+    doc.setFont("times", "normal");
+    doc.text(formData.receiverName, margin + 10, cursorY + 5);
+    if (formData.receiverAddress) {
+      const recvAddrLines = doc.splitTextToSize(formData.receiverAddress, maxLineWidth - 10);
+      recvAddrLines.forEach((line: string, i: number) => {
+        doc.text(line, margin + 10, cursorY + 10 + (i * 5));
+      });
+      cursorY += 10 + recvAddrLines.length * 5;
+    } else {
+      cursorY += 10;
+    }
+
+    cursorY += 5;
+    doc.setLineWidth(0.3);
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, cursorY, pageWidth - margin, cursorY);
+    cursorY += 8;
+
+    // Date
+    doc.setFont("times", "normal");
+    doc.setFontSize(10);
+    doc.text(`Date: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}`, pageWidth - margin, cursorY, { align: 'right' });
+    cursorY += 8;
+
+    // Document Title
+    doc.setFont("times", "bold");
+    doc.setFontSize(14);
+    doc.text(title.toUpperCase(), pageWidth / 2, cursorY, { align: 'center' });
+    cursorY += 3;
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(0, 0, 0);
+    doc.line(margin, cursorY, pageWidth - margin, cursorY);
+    cursorY += 8;
+
+    // Document Content
+    doc.setFont("times", "normal");
+    doc.setFontSize(11);
     const lines = doc.splitTextToSize(content, maxLineWidth);
     let pageCount = 1;
 
     const addFooter = (pNum: number) => {
       doc.setFont("times", "italic");
-      doc.setFontSize(9);
-      doc.text(`Page ${pNum} - Generated by AI Legal Notice Assistant`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+      doc.setFontSize(8);
+      doc.setDrawColor(200, 200, 200);
+      doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
+      doc.text(`Page ${pNum} | AI Legal Notice Generator | Confidential`, pageWidth / 2, pageHeight - 8, { align: 'center' });
     };
 
     for (let i = 0; i < lines.length; i++) {
-        if (cursorY > pageHeight - 25) {
-            addFooter(pageCount);
-            doc.addPage();
-            pageCount++;
-            cursorY = 25; 
-        }
-        doc.setFont("times", "normal");
-        doc.text(lines[i], margin, cursorY);
-        cursorY += 7;
+      if (cursorY > pageHeight - 25) {
+        addFooter(pageCount);
+        doc.addPage();
+        pageCount++;
+        cursorY = 25;
+      }
+      doc.setFont("times", "normal");
+      doc.text(lines[i], margin, cursorY);
+      cursorY += 7;
     }
-    
-    // Add Stamp if available (at the end)
+
+    // Stamp at bottom
     if (formData.lawyerStamp) {
-       if (cursorY > pageHeight - 50) {
-          doc.addPage();
-          cursorY = 25;
-       }
-       try {
-         doc.addImage(formData.lawyerStamp, 'PNG', margin, cursorY + 5, 35, 35);
-       } catch (e) {
-         console.error('PDF Stamp Error:', e);
-       }
+      if (cursorY > pageHeight - 55) {
+        addFooter(pageCount);
+        doc.addPage();
+        pageCount++;
+        cursorY = 25;
+      }
+      try {
+        doc.addImage(formData.lawyerStamp, 'PNG', margin, cursorY + 5, 38, 38);
+      } catch {
+        try { doc.addImage(formData.lawyerStamp, 'JPEG', margin, cursorY + 5, 38, 38); } catch {}
+      }
     }
 
     addFooter(pageCount);
     doc.save(`${title.replace(/\s+/g, '_')}.pdf`);
   };
 
+  // Format doc content for display with bold headings
+  const renderFormattedContent = (content: string) => {
+    if (!content) return null;
+    return content.split('\n').map((line, i) => {
+      const isMajorHeading = /^(LEGAL NOTICE|FACTS|LEGAL GROUNDS|DEMANDS|ULTIMATUM|SUBJECT:|TO:|FROM:|NOTICE|PRAYER)/i.test(line.trim());
+      const isNumberedClause = /^\d+\./.test(line.trim());
+      return (
+        <Typography
+          key={i}
+          component="p"
+          sx={{
+            fontFamily: 'serif',
+            fontSize: isMajorHeading ? '0.95rem' : '0.9rem',
+            fontWeight: isMajorHeading ? 700 : (isNumberedClause ? 500 : 400),
+            textTransform: isMajorHeading ? 'uppercase' : 'none',
+            letterSpacing: isMajorHeading ? '0.05em' : 'normal',
+            color: isMajorHeading ? 'primary.main' : 'text.primary',
+            lineHeight: 1.85,
+            mt: isMajorHeading ? 1.5 : 0,
+            mb: isMajorHeading ? 0.5 : 0,
+            borderBottom: isMajorHeading ? '1px solid' : 'none',
+            borderColor: 'divider',
+            pb: isMajorHeading ? 0.5 : 0,
+          }}
+        >
+          {line || '\u00A0'}
+        </Typography>
+      );
+    });
+  };
+
   return (
-    <Box sx={{ width: '100%', mt: 4 }} className="animate-fade-in">
+    <Box sx={{ width: '100%', mt: 2 }} className="animate-fade-in">
       <Paper elevation={0} className="glass-panel" sx={{ borderRadius: 3, overflow: 'hidden' }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.03)' }}>
           <Tabs
@@ -213,97 +330,171 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
                 icon={tab.icon}
                 iconPosition="start"
                 label={tab.label}
-                sx={{ fontWeight: 600, textTransform: 'capitalize', fontSize: '1rem' }}
+                sx={{ fontWeight: 600, textTransform: 'capitalize', fontSize: '0.95rem' }}
               />
             ))}
           </Tabs>
         </Box>
 
         {tabs.map((tab, idx) => (
-          <Box
-            key={idx}
-            role="tabpanel"
-            hidden={tabIndex !== idx}
-            sx={{ p: { xs: 2, md: 4 } }}
-          >
+          <Box key={idx} role="tabpanel" hidden={tabIndex !== idx} sx={{ p: { xs: 2, md: 4 } }}>
             {tabIndex === idx && (
               <Box>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                  <Typography variant="h6" color="primary">
-                    {tab.title}
-                  </Typography>
+                {/* Header Row */}
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} flexWrap="wrap" gap={1}>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Typography variant="h6" color="primary" fontWeight={700}>{tab.title}</Typography>
+                    {tab.content && !docLoading[tab.id] && (
+                      <Chip label="Ready" size="small" color="success" sx={{ fontWeight: 700, fontSize: '0.7rem' }} />
+                    )}
+                  </Box>
+                  
                   {!docLoading[tab.id] && tab.content && (
-                    <Box>
-                      <Tooltip title={copiedIndex === idx ? "Copied!" : "Copy to Clipboard"}>
-                        <IconButton onClick={() => handleCopy(idx, tab.content)} color="primary" sx={{ mr: 1, bgcolor: 'rgba(99,102,241,0.1)' }}>
-                          <Copy size={20} />
+                    <Box display="flex" gap={1} flexWrap="wrap">
+                      {/* Edit Mode Toggle */}
+                      <Tooltip title={editMode[tab.id] ? "Save Edit" : "Edit Directly"}>
+                        <IconButton
+                          onClick={() => setEditMode(prev => ({ ...prev, [tab.id]: !prev[tab.id] }))}
+                          size="small"
+                          sx={{ bgcolor: editMode[tab.id] ? 'rgba(16,185,129,0.15)' : 'rgba(99,102,241,0.1)', borderRadius: 2 }}
+                        >
+                          {editMode[tab.id] ? <CheckCircle2 size={18} color="#10b981" /> : <Pencil size={18} />}
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Download PDF">
-                        <IconButton onClick={() => handleDownloadPDF(tab.title, tab.content)} color="secondary" sx={{ bgcolor: 'rgba(139,92,246,0.1)' }}>
-                          <Download size={20} />
+
+                      {/* Copy */}
+                      <Tooltip title={copiedIndex === idx ? "Copied!" : "Copy"}>
+                        <IconButton onClick={() => handleCopy(idx, tab.content)} size="small" sx={{ bgcolor: 'rgba(99,102,241,0.08)', borderRadius: 2 }}>
+                          <Copy size={18} />
                         </IconButton>
+                      </Tooltip>
+
+                      {/* Regenerate */}
+                      <Tooltip title="Generate fresh draft">
+                        <IconButton onClick={() => handleRegenerate(tab.id)} size="small" sx={{ bgcolor: 'rgba(245,158,11,0.1)', borderRadius: 2 }}>
+                          <RefreshCw size={18} color="#f59e0b" />
+                        </IconButton>
+                      </Tooltip>
+
+                      {/* WhatsApp Share */}
+                      {tab.id === 'whatsappMessage' && (
+                        <Tooltip title="Share on WhatsApp">
+                          <IconButton onClick={() => handleWhatsAppShare(tab.content)} size="small" sx={{ bgcolor: 'rgba(37,211,102,0.1)', borderRadius: 2 }}>
+                            <Share2 size={18} color="#25d366" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+
+                      {/* Download Word */}
+                      <Tooltip title="Download as Word (.doc)">
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => handleDownloadDocx(tab.title, tab.content)}
+                          sx={{ borderRadius: 2, textTransform: 'none', fontSize: '0.75rem', minWidth: 'auto', px: 1.5 }}
+                        >
+                          .doc
+                        </Button>
+                      </Tooltip>
+
+                      {/* Download PDF */}
+                      <Tooltip title="Download PDF (with Letterhead)">
+                        <Button
+                          size="small"
+                          variant="contained"
+                          onClick={() => handleDownloadPDF(tab.title, tab.content)}
+                          startIcon={<Download size={16} />}
+                          sx={{ borderRadius: 2, textTransform: 'none', fontSize: '0.75rem', background: 'linear-gradient(45deg, #6366f1 30%, #8b5cf6 90%)' }}
+                        >
+                          PDF
+                        </Button>
                       </Tooltip>
                     </Box>
                   )}
                 </Box>
-                
+
+                {/* Document Viewer / Editor */}
                 <Paper
                   elevation={0}
                   sx={{
                     p: 4,
-                    minHeight: '200px',
+                    minHeight: '300px',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: docLoading[tab.id] ? 'center' : 'flex-start',
                     alignItems: docLoading[tab.id] ? 'center' : 'stretch',
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.02)',
-                    border: theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)',
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.3)' : '#fafafa',
+                    border: theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.06)',
                     borderRadius: 2,
-                    maxHeight: '500px',
+                    maxHeight: '60vh',
                     overflowY: 'auto',
-                    typography: 'body1',
-                    whiteSpace: 'pre-wrap',
-                    fontFamily: 'serif',
-                    lineHeight: 1.8,
+                    position: 'relative',
                   }}
                 >
                   {docLoading[tab.id] ? (
                     <Box textAlign="center">
                       <Loader2 size={32} className="animate-spin" style={{ color: theme.palette.primary.main, marginBottom: 12 }} />
                       <Typography variant="body2" color="text.primary" fontWeight={600} mb={0.5}>
-                         {tabLoadingMessages[loadingStep]}
+                        {tabLoadingMessages[loadingStep]}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {docs[tab.id] ? 'Refining draft...' : `Generating specialized ${tab.label.toLowerCase()}...`}
+                        {docs[tab.id] ? 'Refining draft...' : `Generating your ${tab.label.toLowerCase()}...`}
                       </Typography>
                     </Box>
                   ) : fetchError && !tab.content ? (
-                    <Typography color="error">{fetchError}</Typography>
+                    <Box textAlign="center">
+                      <X size={32} color="#ef4444" style={{ marginBottom: 8 }} />
+                      <Typography color="error" fontWeight={600}>{fetchError}</Typography>
+                    </Box>
+                  ) : editMode[tab.id] ? (
+                    // DIRECT EDIT MODE
+                    <TextField
+                      fullWidth
+                      multiline
+                      value={docs[tab.id]}
+                      onChange={(e) => setDocs(prev => ({ ...prev, [tab.id]: e.target.value }))}
+                      variant="standard"
+                      InputProps={{ disableUnderline: true }}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          fontFamily: 'serif',
+                          fontSize: '0.9rem',
+                          lineHeight: 1.85,
+                          color: 'text.primary',
+                        }
+                      }}
+                    />
                   ) : (
-                    tab.content || 'Drafting will begin when you click this tab.'
+                    // FORMATTED VIEW MODE
+                    <Box>
+                      {renderFormattedContent(tab.content) || (
+                        <Typography color="text.secondary" fontStyle="italic">
+                          Drafting will begin when you click this tab.
+                        </Typography>
+                      )}
+                    </Box>
                   )}
                 </Paper>
 
                 {/* Refinement Chat Box */}
                 {!docLoading[tab.id] && tab.content && (
-                  <Box mt={4} className="animate-fade-in">
+                  <Box mt={3} className="animate-fade-in">
                     <Typography variant="subtitle2" color="text.secondary" mb={1.5} display="flex" alignItems="center" gap={1}>
-                       <Sparkles size={16} /> Need to change something? Chat with Advocate AI
+                      <Sparkles size={16} /> Refine with AI
                     </Typography>
                     <Box component="form" onSubmit={handleRefine} sx={{ display: 'flex', gap: 1 }}>
                       <TextField
                         fullWidth
                         size="small"
-                        placeholder="e.g. 'Make it more professional', 'Add a 7-day deadline', 'Include the transaction ID...'"
+                        placeholder="e.g. 'Make it more aggressive', 'Add a 7-day deadline', 'Include contract number...'"
                         value={refinementInput}
                         onChange={(e) => setRefinementInput(e.target.value)}
                         disabled={docLoading[tab.id]}
-                        sx={{ 
-                          '& .MuiOutlinedInput-root': { 
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
                             borderRadius: 3,
                             bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'white'
-                          } 
+                          }
                         }}
                         InputProps={{
                           startAdornment: (
@@ -317,8 +508,8 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
                         variant="contained"
                         type="submit"
                         disabled={!refinementInput.trim() || docLoading[tab.id]}
-                        sx={{ 
-                          borderRadius: 3, 
+                        sx={{
+                          borderRadius: 3,
                           px: 3,
                           background: 'linear-gradient(45deg, #6366f1 30%, #8b5cf6 90%)',
                           textTransform: 'none',
