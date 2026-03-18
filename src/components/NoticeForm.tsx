@@ -22,7 +22,7 @@ import {
   FormControlLabel,
   useTheme
 } from '@mui/material';
-import { Send as SendIcon, ArrowRight, ArrowLeft, Wand2, Info, Paperclip, FileCheck } from 'lucide-react';
+import { Send as SendIcon, ArrowRight, ArrowLeft, Wand2, Info, Paperclip, FileCheck, MapPin } from 'lucide-react';
 
 const ISSUE_TYPES = [
   'Fraud',
@@ -139,7 +139,11 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
     setValue('deliveryDate', '2025-11-15', { shouldValidate: true });
     setValue('evidenceText', '--- WhatsApp Log ---\nRahul: "Is the shoot confirmed for tomorrow morning at the Taj Hotel?"\nDreamShot: "Yes absolutely. Our team will be there at 8am. Dont worry."\n... next day ...\nRahul: "Where are you guys? It is 9am. Please respond."\nRahul: "Please pick up. This is very unprofessional."', { shouldValidate: true });
     setValue('senderName', 'Rahul Verma', { shouldValidate: true });
+    setValue('senderAddress', 'House No. 402, Lotus Boulevard, Sector 100, Noida, UP - 201301', { shouldValidate: true });
     setValue('receiverName', 'DreamShot Studio Pvt Ltd', { shouldValidate: true });
+    setValue('receiverAddress', 'Office 7, 3rd Floor, DLF Cyber City, Phase III, Gurgaon, Haryana - 122002', { shouldValidate: true });
+    setValue('lawyerName', 'Adv. R.K. Singhania', { shouldValidate: true });
+    setValue('lawyerAddress', 'Chamber 412, High Court of Delhi, New Delhi - 110003', { shouldValidate: true });
   };
 
   return (
@@ -398,9 +402,12 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
                       {...field}
                       fullWidth
                       label="Advocate Chamber / Office Address *"
-                      placeholder="e.g. Chamber No. 42, Civil Courts, New Delhi"
+                      placeholder="e.g. Chamber No. 42, District Court complex, Janakpuri, New Delhi - 110058"
                       multiline
                       rows={2}
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start"><MapPin size={18} /></InputAdornment>,
+                      }}
                       error={!!errors.lawyerAddress}
                       helperText={errors.lawyerAddress?.message}
                       disabled={loading}
@@ -437,10 +444,13 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
                       <TextField
                         {...field}
                         fullWidth
-                        label="Source Address *"
-                        placeholder="Current residential or business address"
+                        label="Sender's Complete Address *"
+                        placeholder="House/Office No, Street, Sector, City, State, PIN"
                         multiline
                         rows={1}
+                        InputProps={{
+                          startAdornment: <InputAdornment position="start"><MapPin size={18} /></InputAdornment>,
+                        }}
                         error={!!errors.senderAddress}
                         helperText={errors.senderAddress?.message}
                         disabled={loading}
@@ -473,10 +483,13 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
                       <TextField
                         {...field}
                         fullWidth
-                        label="Delivery Address (Recipient) *"
-                        placeholder="Registered office or contact address of the opposite party"
+                        label="Recipient's Service Address *"
+                        placeholder="Registered Address where notice will be delivered"
                         multiline
                         rows={1}
+                        InputProps={{
+                          startAdornment: <InputAdornment position="start"><MapPin size={18} /></InputAdornment>,
+                        }}
                         error={!!errors.receiverAddress}
                         helperText={errors.receiverAddress?.message}
                         disabled={loading}
