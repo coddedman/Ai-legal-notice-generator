@@ -17,7 +17,9 @@ export async function POST(req: Request) {
       senderType,
       lawyerName,
       evidenceText,
-      targetDoc = 'legalNotice' // default to legalNotice if not specified
+      targetDoc = 'legalNotice',
+      refinement, // New: User chat instructions
+      currentDraft // New: The existing draft to be refined
     } = body;
 
     // --- BFF Architecture: Securely store confidential information server-side ---
@@ -34,7 +36,7 @@ export async function POST(req: Request) {
         id: crypto.randomUUID(),
         timestamp: new Date().toISOString(),
         confidentialData: body,
-        status: `drafting_${targetDoc}`
+        status: refinement ? `refining_${targetDoc}` : `drafting_${targetDoc}`
       };
       
       let records = [];
@@ -43,7 +45,7 @@ export async function POST(req: Request) {
       }
       records.push(secureRecord);
       fs.writeFileSync(dbFile, JSON.stringify(records, null, 2));
-      console.log(`[BFF] Securely stored confidential dispute record ID: ${secureRecord.id}`);
+      console.log(`[BFF] Securely stored confidential action ID: ${secureRecord.id}`);
     } catch (saveError) {
       console.error('[BFF] Failed to securely store confidential data:', saveError);
     }
@@ -56,22 +58,34 @@ export async function POST(req: Request) {
       const isLawyer = senderType === 'lawyer';
       
       let docTask = '';
-      if (targetDoc === 'legalNotice') {
-        docTask = `Draft a comprehensive, formidable, and highly structured Formal Legal Notice. 
-          CRITICAL TONE & IDENTITY: 
-          ${isLawyer 
-            ? `You ARE Advocate ${lawyerName}. The notice MUST begin with: "Under instructions from and on behalf of my client ${senderName}, I, Advocate ${lawyerName}, hereby serve upon you..."` 
-            : `You ARE ${senderName} (The Client). You are drafting this FOR YOURSELF. The notice MUST begin with: "I, ${senderName}, hereby serve upon you..." and must NOT mention any other lawyer name or use lawyer placeholders like [Your Name].`}`;
-      } else if (targetDoc === 'whatsappMessage') {
-        docTask = `Draft a stern, professionally intimidating WhatsApp message summarizing the dispute.
-          IDENTITY: ${isLawyer ? `Sent by Advocate ${lawyerName} on behalf of ${senderName}` : `Sent by ${senderName} directly`}.`;
+      if (refinement) {
+        docTask = `REFINE the existing ${targetDoc} provided below.
+          USER'S REFINEMENT REQUEST: "${refinement}"
+          
+          EXISTING DRAFT TO BE MODIFIED:
+          ---
+          ${currentDraft}
+          ---
+          
+          Keep the legal structure but incorporate the requested changes accurately.`;
       } else {
-        docTask = `Draft a detailed Consumer Court OR Police Complaint draft covering cause of action and specific prayers.
-          IDENTITY: ${isLawyer ? `Drafted by Advocate ${lawyerName} for ${senderName}` : `Drafted by ${senderName} personally`}.`;
+        if (targetDoc === 'legalNotice') {
+          docTask = `Draft a comprehensive, formidable, and highly structured Formal Legal Notice. 
+            CRITICAL TONE & IDENTITY: 
+            ${isLawyer 
+              ? `You ARE Advocate ${lawyerName}. The notice MUST begin with: "Under instructions from and on behalf of my client ${senderName}, I, Advocate ${lawyerName}, hereby serve upon you..."` 
+              : `You ARE ${senderName} (The Client). You are drafting this FOR YOURSELF. The notice MUST begin with: "I, ${senderName}, hereby serve upon you..." and must NOT mention any other lawyer name or use lawyer placeholders like [Your Name].`}`;
+        } else if (targetDoc === 'whatsappMessage') {
+          docTask = `Draft a stern, professionally intimidating WhatsApp message summarizing the dispute.
+            IDENTITY: ${isLawyer ? `Sent by Advocate ${lawyerName} on behalf of ${senderName}` : `Sent by ${senderName} directly`}.`;
+        } else {
+          docTask = `Draft a detailed Consumer Court OR Police Complaint draft covering cause of action and specific prayers.
+            IDENTITY: ${isLawyer ? `Drafted by Advocate ${lawyerName} for ${senderName}` : `Drafted by ${senderName} personally`}.`;
+        }
       }
 
       const prompt = `You are a highly experienced Indian Senior Advocate. 
-        Analyze the following dispute and draft a highly detailed, professional, and legally sound ${targetDoc}.
+        Analyze the following dispute and ${refinement ? 'REFINE' : 'draft'} a highly detailed, professional, and legally sound ${targetDoc}.
         
         CONTEXT:
         - Drafting Party: ${isLawyer ? `Advocate ${lawyerName}` : 'The Client Themselves (Pro Se)'}
@@ -107,7 +121,7 @@ export async function POST(req: Request) {
         ];
         
         for (const targetModel of fallbackModels) {
-           console.log('[BFF] Attempting targeted generation (' + targetDoc + ') with ' + targetModel + '...');
+           console.log(`[BFF] Attempting ${refinement ? 'refinement' : 'generation'} of (${targetDoc}) with ${targetModel}...`);
            aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
               method: 'POST',
               headers: {
@@ -142,7 +156,7 @@ export async function POST(req: Request) {
             const jsonMatch = content.match(/\{[\s\S]*\}/);
             if (!jsonMatch) { throw new Error('AI did not return a valid JSON format.'); }
             const parsed = JSON.parse(jsonMatch[0]);
-            console.log(`[BFF] AI Successfully Generated ${targetDoc}.`);
+            console.log(`[BFF] AI Successfully Generated/Refined ${targetDoc}.`);
             return NextResponse.json(parsed);
         } else {
              throw new Error('Empty response from AI');
@@ -155,14 +169,16 @@ export async function POST(req: Request) {
 
     // Advanced Mock for MVP Delivery Reliability
     const defaultAmountText = amount ? `Rs. ${amount}/-` : 'the relevant amount';
-    let mockResult = '';
+    let mockResult = refinement ? `[REFINED] ${currentDraft}\n\nNote: Refinement applied: ${refinement}` : '';
 
-    if (targetDoc === 'legalNotice') {
-      mockResult = `LEGAL NOTICE\n\nDate: ${new Date().toLocaleDateString('en-IN')}\n\nTo,\n${receiverName}\n\nSub: Legal Notice for ${issueType}\n\n${senderType === 'lawyer' ? `Under instructions from and on behalf of my client ${senderName}, I, Advocate ${lawyerName}, hereby serve upon you...` : `I, ${senderName}, hereby serve upon you the following legal notice:`}\n\n1. That I/we engaged your services for ${serviceDetails}.\n2. That payment of ${defaultAmountText} was made on ${paymentDate}.\n3. Despite delivery date of ${deliveryDate}, no service was provided.\n4. Ultimatum: 15 days for refund or face legal action.`;
-    } else if (targetDoc === 'whatsappMessage') {
-      mockResult = `Final Warning regarding ${issueType}. Amount: ${defaultAmountText}. Resolve within 48 hours to avoid formal court proceedings. - ${senderName}`;
-    } else {
-      mockResult = `BEFORE THE DISTRICT CONSUMER COMMISSION\n\n${senderName} vs ${receiverName}\n\nComplaint for Deficiency in Service regarding ${serviceDetails}.`;
+    if (!refinement) {
+      if (targetDoc === 'legalNotice') {
+        mockResult = `LEGAL NOTICE\n\nDate: ${new Date().toLocaleDateString('en-IN')}\n\nTo,\n${receiverName}\n\nSub: Legal Notice for ${issueType}\n\n${senderType === 'lawyer' ? `Under instructions from and on behalf of my client ${senderName}, I, Advocate ${lawyerName}, hereby serve upon you...` : `I, ${senderName}, hereby serve upon you the following legal notice:`}\n\n1. That I/we engaged your services for ${serviceDetails}.\n2. That payment of ${defaultAmountText} was made on ${paymentDate}.\n3. Despite delivery date of ${deliveryDate}, no service was provided.\n4. Ultimatum: 15 days for refund or face legal action.`;
+      } else if (targetDoc === 'whatsappMessage') {
+        mockResult = `Final Warning regarding ${issueType}. Amount: ${defaultAmountText}. Resolve within 48 hours to avoid formal court proceedings. - ${senderName}`;
+      } else {
+        mockResult = `BEFORE THE DISTRICT CONSUMER COMMISSION\n\n${senderName} vs ${receiverName}\n\nComplaint for Deficiency in Service regarding ${serviceDetails}.`;
+      }
     }
 
     await new Promise(resolve => setTimeout(resolve, 800));

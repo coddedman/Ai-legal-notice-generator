@@ -12,9 +12,10 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
-import { FileText, MessageCircle, FilePenLine, Copy, Download, Loader2 } from 'lucide-react';
+import { FileText, MessageCircle, FilePenLine, Copy, Download, Loader2, Send, Sparkles } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { NoticeFormData } from './NoticeForm';
+import { TextField, InputAdornment } from '@mui/material';
 
 interface OutputProps {
   initialData: {
@@ -30,7 +31,7 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
   const [tabIndex, setTabIndex] = useState(0);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   
-  const [docs, setDocs] = useState({
+  const [docs, setDocs] = useState<{ [key: string]: string }>({
     legalNotice: initialData.legalNotice || '',
     whatsappMessage: initialData.whatsappMessage || '',
     complaintDraft: initialData.complaintDraft || ''
@@ -42,10 +43,12 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
     complaintDraft: false
   });
 
+  const [refinementInput, setRefinementInput] = useState('');
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  const fetchDoc = async (target: 'whatsappMessage' | 'complaintDraft') => {
-    if (docs[target]) return; // already fetched
+  const fetchDoc = async (target: string, refinement?: string) => {
+    // Only skip if it's a first-time fetch and already exists (refinement always fetches)
+    if (!refinement && docs[target]) return; 
 
     setDocLoading(prev => ({ ...prev, [target]: true }));
     setFetchError(null);
@@ -54,24 +57,38 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, targetDoc: target }),
+        body: JSON.stringify({ 
+          ...formData, 
+          targetDoc: target,
+          refinement: refinement,
+          currentDraft: docs[target]
+        }),
       });
 
-      if (!res.ok) throw new Error(`Failed to fetch ${target}`);
+      if (!res.ok) throw new Error(`Failed to process request for ${target}`);
       
       const resData = await res.json();
       setDocs(prev => ({ ...prev, [target]: resData[target] }));
+      if (refinement) setRefinementInput('');
     } catch (err: any) {
-      setFetchError(err.message || 'Error loading draft');
+      setFetchError(err.message || 'Error communicating with AI');
     } finally {
       setDocLoading(prev => ({ ...prev, [target]: false }));
     }
   };
 
+  const handleRefine = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!refinementInput.trim()) return;
+    const currentTabId = tabs[tabIndex].id;
+    fetchDoc(currentTabId, refinementInput);
+  };
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabIndex(newValue);
-    if (newValue === 1) fetchDoc('whatsappMessage');
-    if (newValue === 2) fetchDoc('complaintDraft');
+    const targetId = tabs[newValue].id;
+    if (targetId === 'whatsappMessage') fetchDoc('whatsappMessage');
+    if (targetId === 'complaintDraft') fetchDoc('complaintDraft');
   };
 
   const tabs = [
@@ -185,7 +202,7 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
                     <Box textAlign="center">
                       <Loader2 size={32} className="animate-spin" style={{ color: theme.palette.primary.main, marginBottom: 12 }} />
                       <Typography variant="body2" color="text.secondary">
-                        Generating specialized {tab.label.toLowerCase()}...
+                        {docs[tab.id] ? 'Refining draft...' : `Generating specialized ${tab.label.toLowerCase()}...`}
                       </Typography>
                     </Box>
                   ) : fetchError && !tab.content ? (
@@ -194,6 +211,52 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
                     tab.content || 'Drafting will begin when you click this tab.'
                   )}
                 </Paper>
+
+                {/* Refinement Chat Box */}
+                {!docLoading[tab.id] && tab.content && (
+                  <Box mt={4} className="animate-fade-in">
+                    <Typography variant="subtitle2" color="text.secondary" mb={1.5} display="flex" alignItems="center" gap={1}>
+                       <Sparkles size={16} /> Need to change something? Chat with Advocate AI
+                    </Typography>
+                    <Box component="form" onSubmit={handleRefine} sx={{ display: 'flex', gap: 1 }}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        placeholder="e.g. 'Make it more professional', 'Add a 7-day deadline', 'Include the transaction ID...'"
+                        value={refinementInput}
+                        onChange={(e) => setRefinementInput(e.target.value)}
+                        disabled={docLoading[tab.id]}
+                        sx={{ 
+                          '& .MuiOutlinedInput-root': { 
+                            borderRadius: 3,
+                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'white'
+                          } 
+                        }}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <MessageCircle size={18} color={theme.palette.text.secondary} />
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                      <Button
+                        variant="contained"
+                        type="submit"
+                        disabled={!refinementInput.trim() || docLoading[tab.id]}
+                        sx={{ 
+                          borderRadius: 3, 
+                          px: 3,
+                          background: 'linear-gradient(45deg, #6366f1 30%, #8b5cf6 90%)',
+                          textTransform: 'none',
+                          fontWeight: 600
+                        }}
+                      >
+                        <Send size={18} />
+                      </Button>
+                    </Box>
+                  </Box>
+                )}
               </Box>
             )}
           </Box>
