@@ -19,10 +19,12 @@ export default function Home() {
     complaintDraft: string;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const handleGenerate = async (formData: NoticeFormData) => {
     setLoading(true);
     setError(null);
+    setSuccessMsg(null);
     setGeneratedData(null);
     
     try {
@@ -42,6 +44,7 @@ export default function Home() {
       }
       
       setGeneratedData(data);
+      setSuccessMsg('Legal Notice drafted successfully!');
       
       // Scroll to result smoothly
       setTimeout(() => {
@@ -153,21 +156,33 @@ export default function Home() {
 
         {loading && (
           <Box mt={6} display="flex" flexDirection="column" alignItems="center" className="animate-fade-in">
-            <CircularProgress size={50} thickness={4} sx={{ color: 'primary.main', mb: 2 }} />
-            <Typography variant="h6" color="text.secondary" className="animate-fade-in">
-              Analyzing dispute details and generating official drafts...
-            </Typography>
+            <CircularProgress size={40} thickness={4} sx={{ color: 'primary.main', mb: 3 }} />
+            <Box p={3} borderRadius={3} bgcolor={theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.02)'} border="1px solid" borderColor="divider">
+               <Typography variant="h6" color="text.primary" fontWeight={600} mb={1}>
+                 Drafting Official Notice
+               </Typography>
+               <Typography variant="body2" color="text.secondary">
+                 Our AI is formulating the exact legal terminology and consequences based on your detailed input...
+               </Typography>
+            </Box>
           </Box>
         )}
 
         {generatedData && !loading && (
-          <NoticeOutput data={generatedData} />
+          <Box mt={5}>
+            <NoticeOutput data={generatedData} />
+          </Box>
         )}
       </Container>
       
-      <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(null)}>
-        <Alert severity="error" onClose={() => setError(null)} sx={{ width: '100%', borderRadius: 2 }}>
-          {error}
+      <Snackbar open={!!error || !!successMsg} autoHideDuration={6000} onClose={() => { setError(null); setSuccessMsg(null); }} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <Alert 
+          severity={error ? "error" : "success"} 
+          onClose={() => { setError(null); setSuccessMsg(null); }} 
+          sx={{ width: '100%', borderRadius: 2, fontWeight: 500 }}
+          variant="filled"
+        >
+          {error || successMsg}
         </Alert>
       </Snackbar>
     </Box>
