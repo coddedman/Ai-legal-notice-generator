@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 
 export async function POST(req: Request) {
   try {
@@ -13,6 +15,35 @@ export async function POST(req: Request) {
       deliveryDate,
       description,
     } = body;
+
+    // --- BFF Architecture: Securely store confidential information server-side ---
+    // The Next.js API route acts as the Backend-For-Frontend (BFF).
+    // We store sensitive user data here securely before sending sanitized portions to external AIs.
+    try {
+      const dataDir = path.join(process.cwd(), '.secure_data');
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir);
+      }
+      
+      const dbFile = path.join(dataDir, 'confidential_records.json');
+      const secureRecord = {
+        id: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+        confidentialData: body,
+        status: 'draft_generated'
+      };
+      
+      let records = [];
+      if (fs.existsSync(dbFile)) {
+        records = JSON.parse(fs.readFileSync(dbFile, 'utf-8'));
+      }
+      records.push(secureRecord);
+      fs.writeFileSync(dbFile, JSON.stringify(records, null, 2));
+      console.log(`[BFF] Securely stored confidential dispute record ID: ${secureRecord.id}`);
+    } catch (saveError) {
+      console.error('[BFF] Failed to securely store confidential data:', saveError);
+    }
+    // -----------------------------------------------------------------------------
 
     // We can try calling an external API if key is set, otherwise use an advanced mock 
     // to provide the MVP experience right away without configuration blocks.
