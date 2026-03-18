@@ -85,7 +85,12 @@ export async function POST(req: NextRequest) {
 
     // ── TIER 1: Gemini models ──
     if (geminiKey) {
-      const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-latest'];
+      const geminiModels = [
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-lite',
+        'gemini-1.5-flash',
+        'gemini-1.5-flash-latest',
+      ];
       for (const model of geminiModels) {
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
         const attempt = await fetch(apiUrl, {
@@ -108,13 +113,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ── TIER 2: OpenRouter fallback (separate quota pool) ──
+    // ── TIER 2: OpenRouter fallback — each model has its own independent quota pool ──
     if (!responseText && openRouterKey) {
       console.log('[BFF] Gemini quota exhausted, falling back to OpenRouter...');
       const orModels = [
+        'deepseek/deepseek-r1:free',           // DeepSeek R1 - strong reasoning
+        'deepseek/deepseek-chat-v3-0324:free', // DeepSeek V3
         'meta-llama/llama-3.3-70b-instruct:free',
+        'qwen/qwen2.5-72b-instruct:free',      // Qwen 2.5 - excellent at structured output
         'google/gemma-3-27b-it:free',
+        'google/gemma-2-9b-it:free',           // Separate quota from gemma-3
         'mistralai/mistral-7b-instruct:free',
+        'meta-llama/llama-3.1-8b-instruct:free',
       ];
       for (const model of orModels) {
         const attempt = await fetch('https://openrouter.ai/api/v1/chat/completions', {
