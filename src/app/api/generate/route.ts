@@ -77,67 +77,82 @@ export async function POST(req: NextRequest) {
       
       OUTPUT FORMAT: Return ONLY a JSON object with a single key: "${targetDoc}". No markdown boxes.`;
 
-    const apiKey = process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY;
-    if (!apiKey) throw new Error('API Key missing. Please set GEMINI_API_KEY.');
+    const geminiKey = process.env.GEMINI_API_KEY;
+    const openRouterKey = process.env.OPENROUTER_API_KEY;
+    if (!geminiKey && !openRouterKey) throw new Error('No API Key configured. Please set GEMINI_API_KEY or OPENROUTER_API_KEY.');
 
-    // Model waterfall — tries each in order, skips on 429 quota errors
-    const models = [
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-1.5-flash-latest',
-      'gemini-flash-latest',
-    ];
+    let responseText = '';
 
-    let response: Response | null = null;
-    let triedModels: string[] = [];
-
-    for (const model of models) {
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const attempt = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 3000, temperature: 0.7 }
-        })
-      });
-
-      triedModels.push(model);
-
-      if (attempt.status === 429) {
-        console.warn(`[BFF] Model ${model} quota exceeded, trying next...`);
-        continue; // try next model
+    // ── TIER 1: Gemini models ──
+    if (geminiKey) {
+      const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-latest'];
+      for (const model of geminiModels) {
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+        const attempt = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { maxOutputTokens: 3000, temperature: 0.7 }
+          })
+        });
+        if (attempt.status === 429 || attempt.status === 404) {
+          console.warn(`[BFF] Gemini ${model}: ${attempt.status}, trying next...`);
+          continue;
+        }
+        if (attempt.ok) {
+          const data = await attempt.json();
+          responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          if (responseText) { console.log(`[BFF] Served by Gemini: ${model}`); break; }
+        }
       }
+    }
 
-      if (attempt.status === 404) {
-        console.warn(`[BFF] Model ${model} not found, trying next...`);
-        continue;
+    // ── TIER 2: OpenRouter fallback (separate quota pool) ──
+    if (!responseText && openRouterKey) {
+      console.log('[BFF] Gemini quota exhausted, falling back to OpenRouter...');
+      const orModels = [
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'google/gemma-3-27b-it:free',
+        'mistralai/mistral-7b-instruct:free',
+      ];
+      for (const model of orModels) {
+        const attempt = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openRouterKey}`,
+            'HTTP-Referer': 'https://ai-legal-notice-generator.vercel.app',
+            'X-Title': 'AI Legal Notice Generator'
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 3000,
+            temperature: 0.7
+          })
+        });
+        if (attempt.status === 429 || attempt.status === 402) {
+          console.warn(`[BFF] OpenRouter ${model}: ${attempt.status}, trying next...`);
+          continue;
+        }
+        if (attempt.ok) {
+          const data = await attempt.json();
+          responseText = data.choices?.[0]?.message?.content || '';
+          if (responseText) { console.log(`[BFF] Served by OpenRouter: ${model}`); break; }
+        }
       }
-
-      response = attempt;
-      console.log(`[BFF] Using model: ${model}`);
-      break;
     }
 
-    if (!response) {
-      throw new Error(`All Gemini models quota exceeded for today. Please try again tomorrow or upgrade your Gemini API plan at ai.google.dev. Tried: ${triedModels.join(', ')}`);
+    if (!responseText) {
+      throw new Error('Service temporarily unavailable: all AI providers are quota-limited. Please try again in a few minutes.');
     }
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[BFF] Gemini API Error:', errorText);
-      throw new Error(`Gemini API Error: ${errorText}`);
-    }
 
-    const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!content) throw new Error('Empty response from Gemini.');
-
-    console.log(`[BFF] Gemini successfully drafted ${targetDoc}. Length: ${content.length}`);
+    console.log(`[BFF] AI successfully drafted ${targetDoc}. Length: ${responseText.length}`);
 
     let finalDraft = '';
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
 
     if (jsonMatch) {
       try {
@@ -161,7 +176,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!finalDraft) {
-      finalDraft = content.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
+      finalDraft = responseText.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
     }
 
     return NextResponse.json({ [targetDoc]: finalDraft });
