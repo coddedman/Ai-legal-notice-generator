@@ -86,10 +86,10 @@ export async function POST(req: NextRequest) {
     // ── TIER 1: Gemini models ──
     if (geminiKey) {
       const geminiModels = [
-        'gemini-2.0-flash',
-        'gemini-2.0-flash-lite',
-        'gemini-1.5-flash',
-        'gemini-1.5-flash-latest',
+        'gemini-2.5-flash',        // Latest & best — billing enabled
+        'gemini-2.0-flash-lite',   // Lighter, fast fallback
+        'gemini-flash-latest',     // Alias fallback
+        'gemini-flash-lite-latest',
       ];
       for (const model of geminiModels) {
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
