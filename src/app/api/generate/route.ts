@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     };
     const langName = LANGUAGE_NAMES[language] || 'English';
     const langPrefix = language === 'en' ? '' :
-      `ABSOLUTE REQUIREMENT: Write this ENTIRE document in ${langName}. Every word of the body text must be in ${langName} script. Only law section numbers/citations may remain in English.\n\n`;
+      `ABSOLUTE REQUIREMENT: Write this ENTIRE document (including headers, greetings, introductory paragraphs, and closing) in ${langName}. Every word must be in ${langName} script. Only law section numbers/citations may remain in English.\n\n`;
 
     const isLawyer = !!lawyerName && senderType === 'lawyer';
 
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     } catch (e: any) { log('Storage Error', e.message); }
 
     const contextBlock = `
-PARTIES:
+PARTIES (Translate these names/addresses into target language if not English):
 - Sender/Complainant: ${senderName}, ${senderAddrFormatted}
 - Opposite Party: ${receiverName}, ${receiverAddrFormatted}
 - Disputed Amount: Rs. ${amount}
@@ -77,29 +77,32 @@ ${contextBlock}
 
 ${refinement
   ? `REFINE this existing draft based on: "${refinement}"\nEXISTING DRAFT:\n${currentDraft}`
-  : `DRAFT A COMPLETE LEGAL NOTICE following this EXACT structure:
+  : `DRAFT A COMPLETE LEGAL NOTICE. Translate all structure labels (To, From, Subject, Date, etc.) into the target language.
+  
+STRUCTURE TO FOLLOW:
+[SENDER/ADVOCATE INFO] ${isLawyer ? `Adv. ${lawyerNameClean}` : senderName}
+[SENDER/ADVOCATE ADDRESS] ${isLawyer ? lawyerAddrFormatted : senderAddrFormatted}
 
-[LINE 1] ${isLawyer ? `Adv. ${lawyerNameClean}` : senderName}
-[LINE 2] ${isLawyer ? lawyerAddrFormatted : senderAddrFormatted}
-[BLANK LINE]
-[DATE]  Date: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
-[BLANK LINE]
-To,
+[DATE LABEL]: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
+
+[TO LABEL],
 ${receiverName}
 ${receiverAddrFormatted}
-[BLANK LINE]
-SUBJECT: LEGAL NOTICE FOR [RELEVANT BNS OFFENCES BASED ON FACTS]
-[BLANK LINE]
-Dear Sir/Madam,
-[BLANK LINE]
+
+[SUBJECT LABEL]: LEGAL NOTICE FOR [RELEVANT BNS OFFENCES BASED ON FACTS]
+
+[GREETING (e.g. Dear Sir/Madam)],
+
+[INTRODUCTORY PARAGRAPH]:
 ${isLawyer
   ? `Under instructions from and on behalf of my client, ${senderName}, resident of ${senderAddrFormatted}, I, Adv. ${lawyerNameClean}, Advocate, hereby issue this Legal Notice to you as under:`
   : `I, ${senderName}, resident of ${senderAddrFormatted}, hereby issue this Legal Notice to you as under:`}
-[BLANK LINE]
-[NUMBERED PARAGRAPHS — minimum 6 paragraphs covering: (1) relationship/contract, (2) payment/obligation, (3) breach/default, (4) losses suffered, (5) legal provisions under BNS 2023 with section numbers, (6) demand with 15-day ultimatum]
-[BLANK LINE]
-Yours faithfully,
-[BLANK LINE]
+
+[NUMBERED BODY PARAGRAPHS — minimum 6 paragraphs covering: (1) relationship/contract, (2) payment/obligation, (3) breach/default, (4) losses suffered, (5) legal provisions under BNS 2023 with section numbers, (6) demand with 15-day ultimatum]
+
+[CLOSING GREETING (e.g. Yours faithfully)],
+
+[SIGNATURE BLOCK]
 ${isLawyer ? `Adv. ${lawyerNameClean}\n(Counsel for ${senderName})` : senderName}`}
 
 RULES:
@@ -118,8 +121,8 @@ ${contextBlock}
 ${refinement
   ? `REFINE this existing draft based on: "${refinement}"\nEXISTING:\n${currentDraft}`
   : `Write a firm, professional WhatsApp message from ${senderName} to ${receiverName}.
-
-STRUCTURE:
+  
+STRUCTURE (Translate all labels into target language):
 - Opening: State who you are and the issue directly
 - Middle: Key facts (dates, amount paid, what was promised, what happened)
 - Demand: Clear ask — refund Rs. ${amount} within [7 days] or you will file a police complaint + consumer forum case
@@ -137,27 +140,14 @@ ${contextBlock}
 
 ${refinement
   ? `REFINE this existing draft based on: "${refinement}"\nEXISTING:\n${currentDraft}`
-  : `Draft a complete Consumer Forum complaint with this EXACT structure:
+  : `Draft a complete Consumer Forum complaint. TRANSLATE the entire structure including headings into the target language.
 
-BEFORE THE DISTRICT CONSUMER DISPUTES REDRESSAL COMMISSION
-[RELEVANT DISTRICT]
-
-COMPLAINT NO. ___/[YEAR]
-
-IN THE MATTER OF:
-${senderName}
-${senderAddrFormatted}
-                                        ...COMPLAINANT
-
-VERSUS
-
-${receiverName}
-${receiverAddrFormatted}
-                                        ...OPPOSITE PARTY
-
-COMPLAINT UNDER SECTION 35 OF THE CONSUMER PROTECTION ACT, 2019
-
-MOST RESPECTFULLY SUBMITTED AS UNDER:
+STRUCTURE TO FOLLOW:
+[COURT NAME]
+[CASE NUMBER BLOCK]
+[PARTIES BLOCK (Complainant vs Opposite Party)]
+[COMPLAINT TITLE]
+[PRAYER FOR COMPLAINT]
 
 BRIEF FACTS:
 [Numbered paragraphs — 1 to 8+ covering: complainant details, opposite party details, service contracted, amount paid, what was promised, what failed, mental agony, previous attempts to resolve]
