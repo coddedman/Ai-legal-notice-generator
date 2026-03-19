@@ -68,6 +68,9 @@ PARTIES:
 ${isLawyer ? `- Drafting Advocate: ${lawyerName}, ${lawyerAddrFormatted}` : ''}
 ${evidenceText ? `\nEVIDENCE:\n${evidenceText}` : ''}`;
 
+    // Strip any 'Adv.' / 'Advocate' prefix from lawyerName so template doesn't double-prefix
+    const lawyerNameClean = (lawyerName || '').replace(/^(Adv\.?\s*|Advocate\s*)/i, '').trim();
+
     // ── SPECIALISED PROMPTS BY DOC TYPE ──
     let prompt = '';
 
@@ -79,7 +82,7 @@ ${refinement
   ? `REFINE this existing draft based on: "${refinement}"\nEXISTING DRAFT:\n${currentDraft}`
   : `DRAFT A COMPLETE LEGAL NOTICE following this EXACT structure:
 
-[LINE 1] ${isLawyer ? `Adv. ${lawyerName}` : senderName}
+[LINE 1] ${isLawyer ? `Adv. ${lawyerNameClean}` : senderName}
 [LINE 2] ${isLawyer ? lawyerAddrFormatted : senderAddrFormatted}
 [BLANK LINE]
 [DATE]  Date: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
@@ -93,14 +96,14 @@ SUBJECT: LEGAL NOTICE FOR [RELEVANT BNS OFFENCES BASED ON FACTS]
 Dear Sir/Madam,
 [BLANK LINE]
 ${isLawyer
-  ? `Under instructions from and on behalf of my client, ${senderName}, resident of ${senderAddrFormatted}, I, ${lawyerName}, Advocate, hereby issue this Legal Notice to you as under:`
+  ? `Under instructions from and on behalf of my client, ${senderName}, resident of ${senderAddrFormatted}, I, Adv. ${lawyerNameClean}, Advocate, hereby issue this Legal Notice to you as under:`
   : `I, ${senderName}, resident of ${senderAddrFormatted}, hereby issue this Legal Notice to you as under:`}
 [BLANK LINE]
 [NUMBERED PARAGRAPHS — minimum 6 paragraphs covering: (1) relationship/contract, (2) payment/obligation, (3) breach/default, (4) losses suffered, (5) legal provisions under BNS 2023 with section numbers, (6) demand with 15-day ultimatum]
 [BLANK LINE]
 Yours faithfully,
 [BLANK LINE]
-${isLawyer ? `Adv. ${lawyerName}\n(Counsel for ${senderName})` : senderName}`}
+${isLawyer ? `Adv. ${lawyerNameClean}\n(Counsel for ${senderName})` : senderName}`}
 
 RULES:
 - Use real BNS 2023 section numbers (e.g., Section 318 for cheating, Section 316 for criminal breach of trust)
@@ -202,7 +205,7 @@ OUTPUT: Return ONLY the plain text of the complaint. No JSON. No markdown. Just 
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { maxOutputTokens: 3000, temperature: 0.7 }
+            generationConfig: { maxOutputTokens: 8192, temperature: 0.7 }
           })
         });
         if (attempt.status === 429 || attempt.status === 404) {
