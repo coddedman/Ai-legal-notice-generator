@@ -1,7 +1,7 @@
 {
-  "name": "AI Legal Notice Generator India",
-  "short_name": "Legal Notice AI",
-  "description": "Generate professional legal notices compliant with BNS 2023 using AI",
+  "name": "My Legal Notice India",
+  "short_name": "MyLegalNotice",
+  "description": "My Legal Notice — India’s leading AI-powered legal notice & demand drafting platform.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0d0d1a",
