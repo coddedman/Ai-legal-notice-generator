@@ -12,13 +12,16 @@ import {
   IconButton,
   Tooltip,
   Chip,
+  Select,
+  MenuItem,
+  FormControl,
 } from '@mui/material';
-import { 
-  FileText, MessageCircle, FilePenLine, Copy, Download, Loader2, Send, Sparkles, 
-  Pencil, CheckCircle2, X, RefreshCw, Share2
+import {
+  FileText, MessageCircle, FilePenLine, Copy, Download, Loader2, Send, Sparkles,
+  Pencil, CheckCircle2, X, RefreshCw, Share2, Languages
 } from 'lucide-react';
 import jsPDF from 'jspdf';
-import { NoticeFormData } from './NoticeForm';
+import { NoticeFormData, LANGUAGES } from './NoticeForm';
 import { TextField, InputAdornment } from '@mui/material';
 
 interface OutputProps {
@@ -51,6 +54,7 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
   const [refinementInput, setRefinementInput] = useState('');
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [loadingStep, setLoadingStep] = useState(0);
+  const [selectedLanguage, setSelectedLanguage] = useState(formData.language || 'en');
 
   const tabLoadingMessages = [
     "Analyzing specific context for this format...",
@@ -72,7 +76,7 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
     return () => clearInterval(interval);
   }, [docLoading]);
 
-  const fetchDoc = async (target: string, refinement?: string) => {
+  const fetchDoc = async (target: string, refinement?: string, langOverride?: string) => {
     if (!refinement && docs[target]) return;
     setDocLoading(prev => ({ ...prev, [target]: true }));
     setFetchError(null);
@@ -80,7 +84,7 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, targetDoc: target, refinement, currentDraft: docs[target] }),
+        body: JSON.stringify({ ...formData, language: langOverride ?? selectedLanguage, targetDoc: target, refinement, currentDraft: docs[target] }),
       });
       if (!res.ok) throw new Error(`Failed to process request for ${target}`);
       const resData = await res.json();
@@ -91,6 +95,14 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
     } finally {
       setDocLoading(prev => ({ ...prev, [target]: false }));
     }
+  };
+
+  const handleLanguageChange = (newLang: string) => {
+    setSelectedLanguage(newLang);
+    // Clear all cached docs and refetch current tab in new language
+    setDocs({ legalNotice: '', whatsappMessage: '', complaintDraft: '' });
+    const currentTabId = tabs[tabIndex]?.id || 'legalNotice';
+    setTimeout(() => fetchDoc(currentTabId, undefined, newLang), 50);
   };
 
   const handleRegenerate = (target: string) => {
@@ -327,7 +339,7 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
   return (
     <Box sx={{ width: '100%', mt: 2 }} className="animate-fade-in">
       <Paper elevation={0} className="glass-panel" sx={{ borderRadius: 3, overflow: 'hidden' }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.03)' }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center' }}>
           <Tabs
             value={tabIndex}
             onChange={handleTabChange}
@@ -347,6 +359,29 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
               />
             ))}
           </Tabs>
+
+          {/* Language switcher — right of tabs */}
+          <Box sx={{ display: 'flex', alignItems: 'center', pr: 2, gap: 1, flexShrink: 0 }}>
+            <Languages size={16} style={{ opacity: 0.5 }} />
+            <FormControl size="small" variant="outlined">
+              <Select
+                value={selectedLanguage}
+                onChange={(e) => handleLanguageChange(e.target.value)}
+                sx={{
+                  fontSize: '0.8rem',
+                  minWidth: 120,
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'divider' },
+                  '& .MuiSelect-select': { py: 0.8, px: 1.5 },
+                }}
+              >
+                {LANGUAGES.map(l => (
+                  <MenuItem key={l.code} value={l.code} sx={{ fontSize: '0.85rem' }}>
+                    {l.native} <Box component="span" sx={{ ml: 0.5, fontSize: '0.7rem', color: 'text.secondary' }}>({l.label})</Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
         </Box>
 
         {tabs.map((tab, idx) => (
