@@ -501,7 +501,7 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
                     // 📄 FORMATTED VIEW MODE
                     <Box sx={{ p: 4 }}>
                       {/* ── LETTERHEAD (shown when logo/stamp present, Legal Notice tab only) ── */}
-                      {tab.id === 'legalNotice' && (formData.lawyerLogo || formData.lawyerStamp) && (
+                      {(tab.id === 'legalNotice' || tab.id === 'complaintDraft') && (formData.lawyerLogo || formData.lawyerStamp) && (
                         <Box
                           sx={{
                             display: 'flex',
