@@ -111,7 +111,8 @@ RULES:
 - Write full paragraphs — minimum 6.
 - Be legally precise and authoritative.
 
-OUTPUT: Return ONLY the plain text of the notice. No JSON. No markdown. Just the document.`;
+OUTPUT: Return ONLY the plain text of the notice. No JSON. No markdown.
+IMPORTANT: DRAFT THE FULL DOCUMENT FROM START TO END. Do NOT truncate. Ensure all 6+ paragraphs are completed including the signature block. Just the document content.`;
 
     } else if (targetDoc === 'whatsappMessage') {
       prompt = `${langPrefix}You are drafting a WhatsApp demand message for an Indian consumer.
@@ -130,7 +131,8 @@ STRUCTURE:
 TONE: Firm, professional, and official. No slang. No emojis. Plain text only.
 LENGTH: Under 300 words. Short paragraphs suitable for WhatsApp.`}
 
-OUTPUT: Return ONLY the plain text of the WhatsApp message. No JSON. No markdown. Just the message text.`;
+OUTPUT: Return ONLY the plain text of the WhatsApp message. No JSON. No markdown.
+IMPORTANT: DRAFT THE FULL MESSAGE. Ensure it ends with the signature block. Just the message text.`;
 
     } else if (targetDoc === 'complaintDraft') {
       prompt = `${langPrefix}You are an Indian legal expert drafting a formal Consumer Forum Complaint under the Consumer Protection Act 2019.
@@ -178,7 +180,8 @@ DATE:
                                         (${senderName})
                                         COMPLAINANT`}
 
-OUTPUT: Return ONLY the plain text of the complaint. No JSON. No markdown. Just the document.`;
+OUTPUT: Return ONLY the plain text of the complaint. No JSON. No markdown.
+IMPORTANT: DRAFT THE FULL COMPLAINT including PRAYER clause and SIGNATURE. Do NOT stop halfway. Just the document content.`;
     }
 
     const outputKey = targetDoc;
@@ -193,11 +196,11 @@ OUTPUT: Return ONLY the plain text of the complaint. No JSON. No markdown. Just 
     // ── TIER 1: Gemini models ──
     if (geminiKey) {
       const geminiModels = [
-        'gemini-1.5-flash',        // Fast, cost-effective, most reliable
+        'gemini-1.5-flash-latest', // Fast, cost-effective, most reliable
         'gemini-1.5-flash-8b',     // Even more cost effective
-        'gemini-2.0-flash-lite',   // Efficient 2.0 variant
-        'gemini-2.0-flash',        // Core 2.0 flash
-        'gemini-1.5-pro',          // Heavyweight fallback
+        'gemini-2.0-flash-lite-preview-02-05', // High efficiency 2.0
+        'gemini-2.0-flash-exp',    // Core 2.0 flash
+        'gemini-1.5-pro-latest',   // Heavyweight fallback
       ];
 
       for (const model of geminiModels) {
@@ -220,9 +223,15 @@ OUTPUT: Return ONLY the plain text of the complaint. No JSON. No markdown. Just 
 
           if (attempt.ok) {
             const data = await attempt.json();
-            responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            const candidate = data.candidates?.[0];
+            responseText = candidate?.content?.parts?.[0]?.text || '';
+            
+            if (candidate?.finishReason !== 'STOP' && candidate?.finishReason) {
+              console.warn(`[BFF] Gemini ${model} finishReason: ${candidate.finishReason} (might be truncated or filtered)`);
+            }
+
             if (responseText) {
-              console.log(`[BFF] Served by Gemini: ${model}`);
+              console.log(`[BFF] Served by Gemini: ${model}. Length: ${responseText.length}`);
               break;
             }
           }
@@ -257,7 +266,7 @@ OUTPUT: Return ONLY the plain text of the complaint. No JSON. No markdown. Just 
           body: JSON.stringify({
             model,
             messages: [{ role: 'user', content: prompt }],
-            max_tokens: 3000,
+            max_tokens: 4000,
             temperature: 0.7
           })
         });
