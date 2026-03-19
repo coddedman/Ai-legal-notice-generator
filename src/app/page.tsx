@@ -146,7 +146,7 @@ export default function Home() {
                 background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #fff 0%, #cbd5e1 100%)' : 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-                fontSize: { xs: '2.5rem', md: '4rem' }
+                fontSize: { xs: '2rem', md: '4rem' }
               }}
             >
               AI Legal Notice Generator

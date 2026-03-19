@@ -179,10 +179,11 @@ IMPORTANT: DRAFT THE FULL COMPLAINT including PRAYER clause and SIGNATURE. Do NO
 
     if (geminiKey) {
       const geminiModels = [
+        'gemini-2.0-flash',
+        'gemini-flash-latest',
+        'gemini-2.0-flash-exp',
         'gemini-1.5-flash',
         'gemini-1.5-flash-latest',
-        'gemini-2.0-flash-exp',
-        'gemini-flash-latest',
         'gemini-2.0-flash-lite-preview-02-05',
         'gemini-1.5-pro'
       ];

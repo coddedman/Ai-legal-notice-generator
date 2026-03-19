@@ -20,6 +20,7 @@ import {
   RadioGroup,
   Radio,
   FormControlLabel,
+  CircularProgress,
   useTheme
 } from '@mui/material';
 import { Send as SendIcon, ArrowRight, ArrowLeft, Wand2, Info, Paperclip, FileCheck, MapPin, Image as ImageIcon, Trash2 } from 'lucide-react';
@@ -197,51 +198,89 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, gap: 1 }}>
-        <Stepper activeStep={activeStep} alternativeLabel sx={{ flexGrow: 1, '& .MuiStepLabel-label': { mt: 1 } }}>
-          {steps.map((label) => (
-            <Step key={label}>
-              <StepLabel>{label}</StepLabel>
-            </Step>
-          ))}
-        </Stepper>
+    <Box sx={{ width: '100%', mb: 2 }}>
+      {/* 📱 Responsively Stacked Header (Stepper + Controls) */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', md: 'row' }, 
+        alignItems: { xs: 'stretch', md: 'center' }, 
+        gap: { xs: 3, md: 2 },
+        mb: 4
+      }}>
+        {/* Stepper — takes priority but shrinks on mobile */}
+        <Box sx={{ flexGrow: 1 }}>
+          <Stepper 
+            activeStep={activeStep} 
+            alternativeLabel={false} 
+            orientation="horizontal"
+            sx={{ 
+              '& .MuiStepLabel-label': { fontSize: { xs: '0.7rem', sm: '0.85rem' } },
+              '& .MuiStepIcon-root': { fontSize: { xs: '1.2rem', sm: '1.5rem' } }
+            }}
+          >
+            {steps.map((label) => (
+              <Step key={label}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+        </Box>
 
-        {/* Language Selector — always visible */}
-        <Controller
-          name="language"
-          control={control}
-          render={({ field }) => (
-            <FormControl size="small" sx={{ minWidth: 130, flexShrink: 0 }}>
-              <InputLabel>Language</InputLabel>
-              <Select {...field} label="Language" disabled={loading}>
-                {LANGUAGES.map(l => (
-                  <MenuItem key={l.code} value={l.code}>
-                    <Box component="span" sx={{ mr: 1 }}>{l.native}</Box>
-                    <Box component="span" sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>{l.label}</Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+        {/* Action Bar (Language + Demo) — stacks or wraps below stepper on mobile */}
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'row', 
+          justifyContent: { xs: 'space-between', md: 'flex-end' },
+          alignItems: 'center', 
+          gap: 1.5,
+          pt: { xs: 1, md: 0 },
+          borderTop: { xs: '1px solid rgba(0,0,0,0.05)', md: 'none' }
+        }}>
+          {/* Try Demo Button — higher visibility */}
+          {activeStep === 0 && (
+            <Button
+              type="button"
+              variant="outlined"
+              size="small"
+              color="secondary"
+              startIcon={<Wand2 size={16} />}
+              onClick={fillDemoData}
+              disabled={loading}
+              sx={{ 
+                borderRadius: 2, 
+                textTransform: 'none', 
+                whiteSpace: 'nowrap',
+                px: { xs: 1.5, sm: 2 },
+                bgcolor: 'rgba(99,102,241,0.03)',
+                borderColor: 'rgba(99,102,241,0.3)',
+                fontSize: { xs: '0.75rem', sm: '0.85rem' }
+              }}
+            >
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Try </Box>Demo Data
+            </Button>
           )}
-        />
 
-        {activeStep === 0 && (
-           <Tooltip title="Auto-fill with demo data to test the AI">
-             <Button
-               type="button"
-               variant="outlined"
-               size="small"
-               color="secondary"
-               startIcon={<Wand2 size={16} />}
-               onClick={fillDemoData}
-               disabled={loading}
-               sx={{ borderRadius: 2, textTransform: 'none', minWidth: '130px', flexShrink: 0 }}
-             >
-               Try Demo Data
-             </Button>
-           </Tooltip>
-        )}
+          {/* Language Selector */}
+          <Controller
+            name="language"
+            control={control}
+            render={({ field }) => (
+              <FormControl size="small" sx={{ minWidth: { xs: 110, sm: 130 } }}>
+                <InputLabel sx={{ fontSize: '0.85rem' }}>Language</InputLabel>
+                <Select {...field} label="Language" disabled={loading} sx={{ fontSize: '0.85rem' }}>
+                  {LANGUAGES.map(l => (
+                    <MenuItem key={l.code} value={l.code} sx={{ py: 1.5 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                        <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.85rem' }}>{l.native}</Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>{l.label}</Typography>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+          />
+        </Box>
       </Box>
 
       <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -599,23 +638,24 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
                     control={control}
                     rules={{ required: 'Complete address is required' }}
                     render={({ field }) => (
-                      <Box display="flex" flexDirection="column" gap={1.5}>
+                        <Box display="flex" flexDirection="column" gap={1.5}>
                         <TextField
-                          size="small"
+                          autoFocus
+                          multiline
+                          rows={2}
                           fullWidth
-                          label="House / Flat / Office No. & Street *"
-                          placeholder="e.g. Flat 402, Lotus Apartments, MG Road"
+                          label="Street Address / Building *"
+                          placeholder="e.g. Apartment, Sector, Area"
                           value={field.value?.split('\n')[0] || ''}
                           onChange={(e) => {
-                            const parts = (field.value || '').split('\n');
+                            const parts = (field.value || '\n\n\n').split('\n');
                             parts[0] = e.target.value;
                             field.onChange(parts.join('\n'));
                           }}
-                          InputProps={{ startAdornment: <InputAdornment position="start"><MapPin size={14} /></InputAdornment> }}
                           disabled={loading}
                           error={!!errors.senderAddress}
                         />
-                        <Box display="flex" gap={1}>
+                        <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={1.5}>
                           <TextField
                             size="small"
                             fullWidth
@@ -623,7 +663,7 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
                             placeholder="e.g. Noida"
                             value={field.value?.split('\n')[1] || ''}
                             onChange={(e) => {
-                              const parts = (field.value || '\n\n').split('\n');
+                              const parts = (field.value || '\n\n\n').split('\n');
                               parts[1] = e.target.value;
                               field.onChange(parts.join('\n'));
                             }}
@@ -633,10 +673,10 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
                             size="small"
                             fullWidth
                             label="State *"
-                            placeholder="e.g. UP"
+                            placeholder="e.g. Uttar Pradesh"
                             value={field.value?.split('\n')[2] || ''}
                             onChange={(e) => {
-                              const parts = (field.value || '\n\n').split('\n');
+                              const parts = (field.value || '\n\n\n').split('\n');
                               parts[2] = e.target.value;
                               field.onChange(parts.join('\n'));
                             }}
@@ -644,9 +684,9 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
                           />
                           <TextField
                             size="small"
-                            sx={{ maxWidth: 100 }}
+                            sx={{ minWidth: { xs: '100%', sm: 110 } }}
                             label="PIN *"
-                            placeholder="110001"
+                            placeholder="201301"
                             value={field.value?.split('\n')[3] || ''}
                             onChange={(e) => {
                               const parts = (field.value || '\n\n\n').split('\n');
@@ -697,21 +737,21 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
                     render={({ field }) => (
                       <Box display="flex" flexDirection="column" gap={1.5}>
                         <TextField
-                          size="small"
+                          multiline
+                          rows={2}
                           fullWidth
-                          label="Registered Office / Shop Address *"
-                          placeholder="e.g. Ground Floor, DLF Cyber Hub, Gurgaon"
+                          label="Opposite Party Address *"
+                          placeholder="e.g. Office address or Residence of opposing party"
                           value={field.value?.split('\n')[0] || ''}
                           onChange={(e) => {
-                            const parts = (field.value || '').split('\n');
+                            const parts = (field.value || '\n\n\n').split('\n');
                             parts[0] = e.target.value;
                             field.onChange(parts.join('\n'));
                           }}
-                          InputProps={{ startAdornment: <InputAdornment position="start"><MapPin size={14} /></InputAdornment> }}
                           disabled={loading}
                           error={!!errors.receiverAddress}
                         />
-                        <Box display="flex" gap={1}>
+                        <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={1.5}>
                           <TextField
                             size="small"
                             fullWidth
@@ -719,7 +759,7 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
                             placeholder="e.g. Gurgaon"
                             value={field.value?.split('\n')[1] || ''}
                             onChange={(e) => {
-                              const parts = (field.value || '\n\n').split('\n');
+                              const parts = (field.value || '\n\n\n').split('\n');
                               parts[1] = e.target.value;
                               field.onChange(parts.join('\n'));
                             }}
@@ -732,7 +772,7 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
                             placeholder="e.g. Haryana"
                             value={field.value?.split('\n')[2] || ''}
                             onChange={(e) => {
-                              const parts = (field.value || '\n\n').split('\n');
+                              const parts = (field.value || '\n\n\n').split('\n');
                               parts[2] = e.target.value;
                               field.onChange(parts.join('\n'));
                             }}
@@ -740,7 +780,7 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
                           />
                           <TextField
                             size="small"
-                            sx={{ maxWidth: 100 }}
+                            sx={{ minWidth: { xs: '100%', sm: 110 } }}
                             label="PIN *"
                             placeholder="122002"
                             value={field.value?.split('\n')[3] || ''}
@@ -764,32 +804,50 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
           </Box>
         )}
 
-        {/* Navigation Buttons */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+        {/* Navigation Buttons — Stacking on mobile */}
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column-reverse', sm: 'row' },
+          justifyContent: 'space-between', 
+          mt: 4, 
+          pt: 3, 
+          borderTop: '1px solid', 
+          borderColor: 'divider',
+          gap: 2
+        }}>
           <Button
             type="button"
             disabled={activeStep === 0 || loading}
             onClick={handleBack}
+            variant="text"
             startIcon={<ArrowLeft size={18} />}
-            sx={{ textTransform: 'none', px: 3 }}
+            sx={{ 
+              textTransform: 'none', 
+              px: { xs: 2, sm: 4 }, 
+              py: 1.5,
+              color: 'text.secondary',
+              fontWeight: 600,
+              width: { xs: '100%', sm: 'auto' }
+            }}
           >
             Back
           </Button>
-          
+
           {activeStep === steps.length - 1 ? (
             <Button
               type="submit"
               variant="contained"
-              color="primary"
               disabled={loading}
-              endIcon={<SendIcon size={18} />}
-              sx={{
-                px: 4,
+              endIcon={loading ? <CircularProgress size={16} color="inherit" /> : <SendIcon size={18} />}
+              sx={{ 
+                textTransform: 'none', 
+                px: { xs: 3, sm: 5 }, 
+                py: 1.5,
                 borderRadius: 2,
-                fontWeight: 600,
-                textTransform: 'none',
-                background: 'linear-gradient(45deg, #6366f1 30%, #8b5cf6 90%)',
-                boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)',
+                fontWeight: 700,
+                width: { xs: '100%', sm: 'auto' },
+                boxShadow: '0 4px 14px 0 rgba(16,185,129,0.3)',
+                background: 'linear-gradient(45deg, #10b981 30%, #059669 90%)'
               }}
             >
               {loading ? 'Drafting...' : 'Generate Legal Notice'}
@@ -797,17 +855,25 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
           ) : (
             <Button
               type="button"
-              variant="contained"
               onClick={handleNext}
+              variant="contained"
               disabled={loading}
-              endIcon={<ArrowRight size={18} />}
-              sx={{ px: 4, borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
+              endIcon={loading ? <CircularProgress size={16} color="inherit" /> : <ArrowRight size={18} />}
+              sx={{ 
+                textTransform: 'none', 
+                px: { xs: 3, sm: 5 }, 
+                py: 1.5,
+                borderRadius: 2,
+                fontWeight: 700,
+                width: { xs: '100%', sm: 'auto' },
+                boxShadow: '0 4px 14px 0 rgba(99,102,241,0.39)',
+                background: 'linear-gradient(45deg, #6366f1 30%, #8b5cf6 90%)'
+              }}
             >
               Continue
             </Button>
           )}
         </Box>
-
       </Box>
     </Box>
   );

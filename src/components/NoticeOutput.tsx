@@ -339,7 +339,14 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
   return (
     <Box sx={{ width: '100%', mt: 2 }} className="animate-fade-in">
       <Paper elevation={0} className="glass-panel" sx={{ borderRadius: 3, overflow: 'hidden' }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ 
+          borderBottom: 1, 
+          borderColor: 'divider', 
+          bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.03)', 
+          display: 'flex', 
+          flexDirection: { xs: 'column', lg: 'row' },
+          alignItems: { xs: 'stretch', lg: 'center' }
+        }}>
           <Tabs
             value={tabIndex}
             onChange={handleTabChange}
@@ -347,7 +354,10 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
             scrollButtons="auto"
             textColor="primary"
             indicatorColor="primary"
-            sx={{ '& .MuiTab-root': { py: 2.5, minHeight: 60 } }}
+            sx={{ 
+              flexGrow: 1,
+              '& .MuiTab-root': { py: 2, minHeight: 50, fontSize: { xs: '0.8rem', sm: '0.95rem' } } 
+            }}
           >
             {tabs.map((tab, idx) => (
               <Tab
@@ -355,21 +365,29 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
                 icon={tab.icon}
                 iconPosition="start"
                 label={tab.label}
-                sx={{ fontWeight: 600, textTransform: 'capitalize', fontSize: '0.95rem' }}
+                sx={{ fontWeight: 600, textTransform: 'capitalize' }}
               />
             ))}
           </Tabs>
 
-          {/* Language switcher — right of tabs */}
-          <Box sx={{ display: 'flex', alignItems: 'center', pr: 2, gap: 1, flexShrink: 0 }}>
+          {/* Language switcher — stacks below tabs on mobile */}
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: { xs: 'center', lg: 'flex-end' },
+            px: 2, 
+            py: { xs: 1.5, lg: 0 },
+            gap: 1, 
+            flexShrink: 0,
+            borderTop: { xs: '1px solid rgba(0,0,0,0.05)', lg: 'none' }
+          }}>
             <Languages size={16} style={{ opacity: 0.5 }} />
-            <FormControl size="small" variant="outlined">
+            <FormControl size="small" variant="outlined" sx={{ minWidth: { xs: '100%', lg: 120 } }}>
               <Select
                 value={selectedLanguage}
                 onChange={(e) => handleLanguageChange(e.target.value)}
                 sx={{
                   fontSize: '0.8rem',
-                  minWidth: 120,
                   '& .MuiOutlinedInput-notchedOutline': { borderColor: 'divider' },
                   '& .MuiSelect-select': { py: 0.8, px: 1.5 },
                 }}
