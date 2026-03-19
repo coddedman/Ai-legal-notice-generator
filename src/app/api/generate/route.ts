@@ -19,8 +19,7 @@ export async function POST(req: NextRequest) {
       pa: 'Punjabi (ਪੰਜਾਬੀ)', ml: 'Malayalam (മലയാളം)',
     };
     const langName = LANGUAGE_NAMES[language] || 'English';
-    const langPrefix = language === 'en' ? '' :
-      `ABSOLUTE REQUIREMENT: Write this ENTIRE document (including headers, greetings, introductory paragraphs, and closing) in ${langName}. Every word must be in ${langName} script. Only law section numbers/citations may remain in English.\n\n`;
+    const langPrefix = `ABSOLUTE REQUIREMENT: Write this ENTIRE document (including headers, greetings, introductory paragraphs, and closing) in ${langName} language. `;
 
     const isLawyer = !!lawyerName && senderType === 'lawyer';
 
@@ -52,7 +51,7 @@ ${contextBlock}
 
 ${refinement
   ? `REFINE this existing draft based on: "${refinement}"\nEXISTING DRAFT:\n${currentDraft}`
-  : `DRAFT A COMPLETE LEGAL NOTICE. Translate all structure labels (To, From, Subject, Date, etc.) into the target language.
+  : `DRAFT A COMPLETE LEGAL NOTICE.
   
 STRUCTURE TO FOLLOW:
 [SENDER/ADVOCATE INFO] ${isLawyer ? `Adv. ${lawyerNameClean}` : senderName}
@@ -97,7 +96,7 @@ ${refinement
   ? `REFINE this existing draft based on: "${refinement}"\nEXISTING:\n${currentDraft}`
   : `Write a firm, professional WhatsApp message from ${senderName} to ${receiverName}.
   
-STRUCTURE (Translate all labels into target language):
+STRUCTURE:
 - Opening: State who you are and the issue directly
 - Middle: Key facts (dates, amount paid, what was promised, what happened)
 - Demand: Clear ask — refund Rs. ${amount} within [7 days] or you will file a police complaint + consumer forum case
@@ -115,7 +114,7 @@ ${contextBlock}
 
 ${refinement
   ? `REFINE this existing draft based on: "${refinement}"\nEXISTING:\n${currentDraft}`
-  : `Draft a complete Consumer Forum complaint. TRANSLATE the entire structure including headings into the target language.
+  : `Draft a complete Consumer Forum complaint.
 
 STRUCTURE TO FOLLOW:
 [COURT NAME]
@@ -144,6 +143,34 @@ DATE:
 
 OUTPUT: Return ONLY the plain text of the complaint. No JSON. No markdown.
 IMPORTANT: DRAFT THE FULL COMPLAINT including PRAYER clause and SIGNATURE. Do NOT stop halfway. Just the document content.`;
+
+    } else if (targetDoc === 'emailDraft') {
+      prompt = `${langPrefix}You are drafting a formal Legal Email Notice.
+${contextBlock}
+
+${refinement
+  ? `REFINE this existing draft based on: "${refinement}"\nEXISTING DRAFT:\n${currentDraft}`
+  : `Draft a complete formal Legal Email.
+
+STRUCTURE TO FOLLOW:
+Subject: FORMAL NOTICE: [Issue Summary] | WITHOUT PREJUDICE
+
+Dear ${receiverName},
+
+[INTRODUCTORY PARAGRAPH]:
+This email serves as a formal written notice regarding the ongoing dispute.
+
+[Numbered body paragraphs detailing the facts, obligations, breach, and amounts owed]
+
+[Demand for resolution within a specific timeframe (e.g., 7-14 days)]
+
+[Warning of further legal action, including consumer court or civil/criminal proceedings]
+
+Sincerely,
+${isLawyer ? `Adv. ${lawyerNameClean}\nCounsel for ${senderName}` : senderName}`}
+
+OUTPUT: Return ONLY the plain text of the email. No JSON. No markdown.
+IMPORTANT: DRAFT THE FULL EMAIL from Subject line to Signature.`;
     }
 
     const geminiKey = process.env.GEMINI_API_KEY;

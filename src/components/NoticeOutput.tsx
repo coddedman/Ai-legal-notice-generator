@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import {
   FileText, MessageCircle, FilePenLine, Copy, Download, Loader2, Send, Sparkles,
-  Pencil, CheckCircle2, X, RefreshCw, Share2, Languages
+  Pencil, CheckCircle2, X, RefreshCw, Share2, Languages, Mail
 } from 'lucide-react';
 import { NoticeFormData, LANGUAGES } from './NoticeForm';
 import { NextPage } from 'next';
@@ -53,6 +53,7 @@ interface OutputProps {
     legalNotice?: string;
     whatsappMessage?: string;
     complaintDraft?: string;
+    emailDraft?: string;
   };
   formData: NoticeFormData;
 }
@@ -63,16 +64,23 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [editMode, setEditMode] = useState<{ [key: string]: boolean }>({});
   
-  const [docs, setDocs] = useState<{ [key: string]: string }>({
+  const [docs, setDocs] = useState<{
+    legalNotice: string;
+    whatsappMessage: string;
+    complaintDraft: string;
+    emailDraft: string;
+  }>({
     legalNotice: initialData.legalNotice || '',
     whatsappMessage: initialData.whatsappMessage || '',
-    complaintDraft: initialData.complaintDraft || ''
+    complaintDraft: initialData.complaintDraft || '',
+    emailDraft: initialData.emailDraft || '',
   });
 
   const [docLoading, setDocLoading] = useState<{ [key: string]: boolean }>({
     legalNotice: false,
     whatsappMessage: false,
-    complaintDraft: false
+    complaintDraft: false,
+    emailDraft: false
   });
 
   const [refinementInput, setRefinementInput] = useState('');
@@ -101,18 +109,18 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
   }, [docLoading]);
 
   const fetchDoc = async (target: string, refinement?: string, langOverride?: string, force?: boolean) => {
-    if (!force && !refinement && docs[target]) return;
+    if (!force && !refinement && docs[target as keyof typeof docs]) return;
     setDocLoading(prev => ({ ...prev, [target]: true }));
     setFetchError(null);
     try {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, language: langOverride ?? selectedLanguage, targetDoc: target, refinement, currentDraft: docs[target] }),
+        body: JSON.stringify({ ...formData, language: langOverride ?? selectedLanguage, targetDoc: target, refinement, currentDraft: docs[target as keyof typeof docs] }),
       });
       if (!res.ok) throw new Error(`Failed to process request for ${target}`);
       const resData = await res.json();
-      setDocs(prev => ({ ...prev, [target]: resData[target] }));
+      setDocs(prev => ({ ...prev, [target as keyof typeof docs]: resData[target] }));
       if (refinement) setRefinementInput('');
     } catch (err: any) {
       setFetchError(err.message || 'Error communicating with AI');
@@ -124,13 +132,13 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
   const handleLanguageChange = (newLang: string) => {
     setSelectedLanguage(newLang);
     // Clear all cached docs and refetch current tab in new language
-    setDocs({ legalNotice: '', whatsappMessage: '', complaintDraft: '' });
+    setDocs({ legalNotice: '', whatsappMessage: '', complaintDraft: '', emailDraft: '' });
     const currentTabId = tabs[tabIndex]?.id || 'legalNotice';
     setTimeout(() => fetchDoc(currentTabId, undefined, newLang, true), 50);
   };
 
   const handleRegenerate = (target: string) => {
-    setDocs(prev => ({ ...prev, [target]: '' }));
+    setDocs(prev => ({ ...prev, [target as keyof typeof docs]: '' }));
     setTimeout(() => fetchDoc(target, undefined, undefined, true), 50);
   };
 
@@ -146,13 +154,16 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
     const targetId = tabs[newValue].id;
     // Don't fetch if already has content OR if in edit mode
     if (!editMode[targetId]) {
-      if (targetId === 'whatsappMessage') fetchDoc('whatsappMessage');
-      if (targetId === 'complaintDraft') fetchDoc('complaintDraft');
+      if (targetId === 'legalNotice' && !docs.legalNotice) fetchDoc('legalNotice');
+      if (targetId === 'whatsappMessage' && !docs.whatsappMessage) fetchDoc('whatsappMessage');
+      if (targetId === 'complaintDraft' && !docs.complaintDraft) fetchDoc('complaintDraft');
+      if (targetId === 'emailDraft' && !docs.emailDraft) fetchDoc('emailDraft');
     }
   };
 
   const tabs = [
     { id: 'legalNotice', label: 'Legal Notice', icon: <FileText size={18} />, content: docs.legalNotice, title: 'Formal Legal Notice' },
+    { id: 'emailDraft', label: 'Email', icon: <Mail size={18} />, content: docs.emailDraft, title: 'Formal Email Notice' },
     { id: 'whatsappMessage', label: 'WhatsApp', icon: <MessageCircle size={18} />, content: docs.whatsappMessage, title: 'WhatsApp Demand Draft' },
     { id: 'complaintDraft', label: 'Complaint Draft', icon: <FilePenLine size={18} />, content: docs.complaintDraft, title: 'Consumer Court / Police Complaint' },
   ];
@@ -247,168 +258,67 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
     }
   };
 
-  const handleDownloadPDF = async (title: string, content: string) => {
+  const handleDownloadPDF = async (title: string, tabId: string) => {
     try {
-      const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF();
-      const margin = 20;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const maxLineWidth = pageWidth - margin * 2;
-
-      let cursorY = 15;
-
-      // Extract specific HTML tags carefully to preserve flow
-      const cleanContentForPDF = (html: string) => {
-        if (!/<[a-z][\s\S]*>/i.test(html)) return html;
-        
-        let text = html
-          // Convert block headers to uppercase and bold-like visual separation later
-          .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n$1\n\n')
-          // Add spacing for paragraphs
-          .replace(/<\/p>/gi, '\n\n')
-          // Line breaks
-          .replace(/<br\s*\/?>/gi, '\n')
-          // List items
-          .replace(/<\/li>/gi, '\n')
-          .replace(/<li>/gi, '• ')
-          // Remove all remaining HTML tags
-          .replace(/<[^>]+>/g, '');
-          
-        return text
-          .replace(/&nbsp;/g, ' ')
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&quot;/g, '"')
-          .replace(/\n\s*\n\s*\n/g, '\n\n') // Collapse excessive newlines
-          .trim();
-      };
-
-      const finalContent = cleanContentForPDF(content);
-
-    // ---- LETTERHEAD ----
-    if (formData.lawyerLogo) {
-      addImageToPdf(doc, formData.lawyerLogo, margin, cursorY, 28, 28);
-    }
-
-    // Lawyer/Sender name block (top right)
-    const isLawyer = formData.senderType === 'lawyer';
-    const senderBlock = isLawyer
-      ? [`Adv. ${formData.lawyerName || ''}`, formData.lawyerAddress || '']
-      : [formData.senderName, formData.senderAddress || ''];
-
-    doc.setFont("times", "bold");
-    doc.setFontSize(11);
-    doc.text(senderBlock[0].toUpperCase(), pageWidth - margin, cursorY + 5, { align: 'right' });
-    doc.setFont("times", "normal");
-    doc.setFontSize(9);
-    const addrLines = doc.splitTextToSize(senderBlock[1], 80);
-    addrLines.forEach((line: string, i: number) => {
-      doc.text(line, pageWidth - margin, cursorY + 10 + (i * 5), { align: 'right' });
-    });
-
-    cursorY += formData.lawyerLogo ? 35 : 20;
-
-    // Divider
-    doc.setDrawColor(99, 102, 241);
-    doc.setLineWidth(0.8);
-    doc.line(margin, cursorY, pageWidth - margin, cursorY);
-    cursorY += 3;
-
-    // Recipient block
-    doc.setFont("times", "bold");
-    doc.setFontSize(10);
-    doc.text('TO:', margin, cursorY + 5);
-    doc.setFont("times", "normal");
-    doc.text(formData.receiverName, margin + 10, cursorY + 5);
-    if (formData.receiverAddress) {
-      const recvAddrLines = doc.splitTextToSize(formData.receiverAddress, maxLineWidth - 10);
-      recvAddrLines.forEach((line: string, i: number) => {
-        doc.text(line, margin + 10, cursorY + 10 + (i * 5));
-      });
-      cursorY += 10 + recvAddrLines.length * 5;
-    } else {
-      cursorY += 10;
-    }
-
-    cursorY += 5;
-    doc.setLineWidth(0.3);
-    doc.setDrawColor(200, 200, 200);
-    doc.line(margin, cursorY, pageWidth - margin, cursorY);
-    cursorY += 8;
-
-    // Date
-    doc.setFont("times", "normal");
-    doc.setFontSize(10);
-    doc.text(`Date: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}`, pageWidth - margin, cursorY, { align: 'right' });
-    cursorY += 8;
-
-    // Document Title
-    doc.setFont("times", "bold");
-    doc.setFontSize(14);
-    doc.text(title.toUpperCase(), pageWidth / 2, cursorY, { align: 'center' });
-    cursorY += 3;
-    doc.setLineWidth(0.5);
-    doc.setDrawColor(0, 0, 0);
-    doc.line(margin, cursorY, pageWidth - margin, cursorY);
-    cursorY += 8;
-
-      // Document Content
-      doc.setFont("times", "normal");
-      doc.setFontSize(11);
+      const element = document.getElementById(`doc-preview-${tabId}`);
+      if (!element) return;
       
-      // Clean paragraphs by splitting by double newline to maintain structure
-      const paragraphs = finalContent.split('\n');
-      let pageCount = 1;
+      const { jsPDF } = await import('jspdf');
+      const html2canvas = (await import('html2canvas')).default;
 
-      const addFooter = (pNum: number) => {
-        doc.setFont("times", "italic");
-        doc.setFontSize(8);
-        doc.setDrawColor(200, 200, 200);
-        doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
-        doc.text(`Page ${pNum} | AI Legal Notice Generator | Confidential`, pageWidth / 2, pageHeight - 8, { align: 'center' });
-      };
-
-      for (let pTag of paragraphs) {
-        if (!pTag.trim()) {
-           cursorY += 4; // Add small spacing for empty lines
-           continue; 
-        }
-        
-        const wrappedLines = doc.splitTextToSize(pTag.trim(), maxLineWidth);
-        
-        for (let i = 0; i < wrappedLines.length; i++) {
-          if (cursorY > pageHeight - 25) {
-            addFooter(pageCount);
-            doc.addPage();
-            pageCount++;
-            cursorY = 25;
-            doc.setFont("times", "normal");
-            doc.setFontSize(11);
-          }
-          doc.text(wrappedLines[i], margin, cursorY);
-          cursorY += 6.5; 
-        }
-        cursorY += 2; // Extra paragraph spacing
+      // Ensure crisp high-res screenshot
+      const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL('image/png');
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      // Calculate how many pages we need based on height
+      let heightLeft = pdfHeight;
+      let position = 0;
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+      heightLeft -= pageHeight;
+      
+      while (heightLeft >= 0) {
+        position = heightLeft - pageHeight; // Adjust position for next page
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pageHeight;
       }
-
-      // Stamp at bottom
-      if (formData.lawyerStamp) {
-        if (cursorY > pageHeight - 55) {
-          addFooter(pageCount);
-          doc.addPage();
-          pageCount++;
-          cursorY = 25;
-        }
-        addImageToPdf(doc, formData.lawyerStamp, margin, cursorY + 5, 38, 38);
-      }
-
-      addFooter(pageCount);
-      doc.save(`${title.replace(/\s+/g, '_')}.pdf`);
+      
+      pdf.save(`${title.replace(/\s+/g, '_')}.pdf`);
     } catch (e) {
       console.error("PDF generation failed:", e);
     }
+  };
+
+  // Helper to format content into HTML for PDF capture
+  const formatHtml = (content: string) => {
+    if (!content) return '';
+    const isHtml = /<[a-z][\s\S]*>/i.test(content);
+
+    if (isHtml) {
+      return content;
+    }
+
+    // Convert plain text to HTML paragraphs, similar to renderFormattedContent logic
+    return content.split('\n').map(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return '<p>&nbsp;</p>'; // Preserve empty lines as spacing
+      const isMajorHeading = /^(LEGAL NOTICE|FACTS|LEGAL GROUNDS|DEMANDS|ULTIMATUM|SUBJECT:|TO:|FROM:|NOTICE|PRAYER)/i.test(trimmed);
+      const isNumberedClause = /^\d+\./.test(trimmed);
+
+      if (isMajorHeading) {
+        return `<h3 style="font-size: 1.1em; font-weight: bold; text-transform: uppercase; margin-top: 1.5em; margin-bottom: 0.5em; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5em;">${trimmed}</h3>`;
+      }
+      if (isNumberedClause) {
+        return `<p style="font-weight: bold; margin-bottom: 0.5em;">${line}</p>`;
+      }
+      return `<p style="margin-bottom: 0.5em;">${line}</p>`;
+    }).join('');
   };
 
   // Format doc content for display with bold headings
@@ -595,16 +505,20 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
                       </Tooltip>
 
                       {/* Download PDF */}
-                      <Tooltip title="Download PDF (with Letterhead)">
-                        <Button
-                          size="small"
-                          variant="contained"
-                          onClick={() => handleDownloadPDF(tab.title, tab.content)}
-                          startIcon={<Download size={16} />}
-                          sx={{ borderRadius: 2, textTransform: 'none', fontSize: '0.75rem', background: 'linear-gradient(45deg, #6366f1 30%, #8b5cf6 90%)' }}
-                        >
-                          PDF
-                        </Button>
+                      <Tooltip title="Download PDF (Exact formatting)">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleDownloadPDF(tab.title, tab.id)}
+                          sx={{ 
+                            border: '1px solid', borderColor: 'divider',
+                            color: 'error.main', bgcolor: 'rgba(239,68,68,0.05)',
+                            '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' }
+                          }}>
+                          <Download size={16} />
+                          <Typography variant="caption" sx={{ ml: 1, fontWeight: 600 }}>
+                            PDF
+                          </Typography>
+                        </IconButton>
                       </Tooltip>
                     </Box>
                   )}
@@ -651,7 +565,7 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
                         {tabLoadingMessages[loadingStep]}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {docs[tab.id] ? 'Refining draft...' : `Generating your ${tab.label.toLowerCase()}...`}
+                        {docs[tab.id as keyof typeof docs] ? 'Refining draft...' : `Generating your ${tab.label.toLowerCase()}...`}
                       </Typography>
                     </Box>
                   ) : fetchError && !tab.content ? (
@@ -697,8 +611,8 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
                     }}>
                       <ReactQuill
                         theme="snow"
-                        value={docs[tab.id]}
-                        onChange={(val) => setDocs(prev => ({ ...prev, [tab.id]: val }))}
+                        value={docs[tab.id as keyof typeof docs]}
+                        onChange={(val) => setDocs(prev => ({ ...prev, [tab.id as keyof typeof docs]: val }))}
                         modules={QUILL_MODULES}
                         formats={QUILL_FORMATS}
                       />
