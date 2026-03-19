@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import ThemeRegistry from '@/theme/ThemeRegistry';
+import Script from 'next/script';
 
 const APP_URL = 'https://mylegalnotice.in';
 const APP_NAME = 'My Legal Notice India';
@@ -143,6 +144,19 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&family=Noto+Sans+Devanagari:wght@400;700&family=Noto+Sans+Bengali:wght@400;700&family=Noto+Sans+Tamil:wght@400;700&family=Noto+Sans+Telugu:wght@400;700&family=Noto+Sans+Gujarati:wght@400;700&family=Noto+Sans+Kannada:wght@400;700&family=Noto+Sans+Gurmukhi:wght@400;700&family=Noto+Sans+Malayalam:wght@400;700&display=swap"
           rel="stylesheet"
         />
+        {/* Google Analytics (gtag.js) */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-QZ5L677E9W"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-QZ5L677E9W');
+          `}
+        </Script>
       </head>
       <body suppressHydrationWarning>
         <ThemeRegistry>{children}</ThemeRegistry>
