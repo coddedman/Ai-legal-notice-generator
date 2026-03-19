@@ -7,10 +7,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
     Google({
-      clientId: process.env.AUTH_GOOGLE_ID,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET,
+      clientId: process.env.AUTH_GOOGLE_ID || "YOUR_GOOGLE_ID",
+      clientSecret: process.env.AUTH_GOOGLE_SECRET || "YOUR_GOOGLE_SECRET",
     }),
   ],
+  secret: process.env.AUTH_SECRET || "fallback-secret-for-development-only-12345",
+  trustHost: true,
   callbacks: {
     session: ({ session, user }) => ({
       ...session,
@@ -19,5 +21,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         id: user.id,
       },
     }),
+  },
+  pages: {
+    signIn: '/auth/signin',
   },
 })

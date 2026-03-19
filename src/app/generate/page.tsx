@@ -145,7 +145,7 @@ export default function GeneratePage() {
         ) : (
           <Button
             variant="text" startIcon={<LogIn size={18} />}
-            onClick={() => signIn('google')} disabled={status === 'loading'}
+            onClick={() => signIn()} disabled={status === 'loading'}
             sx={{ borderRadius: 2, color: 'text.primary', display: { xs: 'none', sm: 'flex' } }}
           >
             Sign In

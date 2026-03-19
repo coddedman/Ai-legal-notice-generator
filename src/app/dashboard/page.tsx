@@ -126,7 +126,7 @@ export default function Dashboard() {
           </Typography>
           <Box display="flex" gap={2} flexWrap="wrap" justifyContent="center">
             <Button
-              variant="contained" size="large" onClick={() => signIn('google')} startIcon={<LogIn size={18} />}
+              variant="contained" size="large" onClick={() => signIn()} startIcon={<LogIn size={18} />}
               sx={{ bgcolor: '#4f46e5', color: 'white', fontWeight: 600, borderRadius: 3, px: 4, py: 1.4, '&:hover': { bgcolor: '#4338ca' } }}
             >
               Sign In to Save Documents

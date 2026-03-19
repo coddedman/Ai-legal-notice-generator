@@ -20,7 +20,6 @@ import {
   FileText, MessageCircle, FilePenLine, Copy, Download, Loader2, Send, Sparkles,
   Pencil, CheckCircle2, X, RefreshCw, Share2, Languages
 } from 'lucide-react';
-import jsPDF from 'jspdf';
 import { NoticeFormData, LANGUAGES } from './NoticeForm';
 import { NextPage } from 'next';
 import dynamic from 'next/dynamic';
@@ -230,7 +229,7 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
     URL.revokeObjectURL(url);
   };
 
-  const addImageToPdf = (doc: jsPDF, src: string, x: number, y: number, w: number, h: number) => {
+  const addImageToPdf = (doc: any, src: string, x: number, y: number, w: number, h: number) => {
     if (!src) return;
     // Detect format from data URI
     let fmt: string = 'PNG';
@@ -248,39 +247,45 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
     }
   };
 
-  const handleDownloadPDF = (title: string, content: string) => {
-    const doc = new jsPDF();
-    const margin = 20;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const maxLineWidth = pageWidth - margin * 2;
+  const handleDownloadPDF = async (title: string, content: string) => {
+    try {
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+      const margin = 20;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const maxLineWidth = pageWidth - margin * 2;
 
-    let cursorY = 15;
+      let cursorY = 15;
 
-    // Helper to clean HTML for simple PDF text rendering
-    const cleanContentForPDF = (html: string) => {
-      if (!/<[a-z][\s\S]*>/i.test(html)) return html;
-      
-      let text = html
-        .replace(/<\/p>/gi, '\n\n')
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<\/li>/gi, '\n')
-        .replace(/<li>/gi, '• ')
-        .replace(/<h\d[^>]*>/gi, '\n\n')
-        .replace(/<\/h\d>/gi, '\n')
-        .replace(/<[^>]+>/g, '');
+      // Extract specific HTML tags carefully to preserve flow
+      const cleanContentForPDF = (html: string) => {
+        if (!/<[a-z][\s\S]*>/i.test(html)) return html;
         
-      // Decode common HTML entities
-      return text
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .trim();
-    };
+        let text = html
+          // Convert block headers to uppercase and bold-like visual separation later
+          .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n$1\n\n')
+          // Add spacing for paragraphs
+          .replace(/<\/p>/gi, '\n\n')
+          // Line breaks
+          .replace(/<br\s*\/?>/gi, '\n')
+          // List items
+          .replace(/<\/li>/gi, '\n')
+          .replace(/<li>/gi, '• ')
+          // Remove all remaining HTML tags
+          .replace(/<[^>]+>/g, '');
+          
+        return text
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/\n\s*\n\s*\n/g, '\n\n') // Collapse excessive newlines
+          .trim();
+      };
 
-    const finalContent = cleanContentForPDF(content);
+      const finalContent = cleanContentForPDF(content);
 
     // ---- LETTERHEAD ----
     if (formData.lawyerLogo) {
@@ -349,45 +354,61 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
     doc.line(margin, cursorY, pageWidth - margin, cursorY);
     cursorY += 8;
 
-    // Document Content
-    doc.setFont("times", "normal");
-    doc.setFontSize(11);
-    const lines = doc.splitTextToSize(finalContent, maxLineWidth);
-    let pageCount = 1;
-
-    const addFooter = (pNum: number) => {
-      doc.setFont("times", "italic");
-      doc.setFontSize(8);
-      doc.setDrawColor(200, 200, 200);
-      doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
-      doc.text(`Page ${pNum} | AI Legal Notice Generator | Confidential`, pageWidth / 2, pageHeight - 8, { align: 'center' });
-    };
-
-    for (let i = 0; i < lines.length; i++) {
-      if (cursorY > pageHeight - 25) {
-        addFooter(pageCount);
-        doc.addPage();
-        pageCount++;
-        cursorY = 25;
-      }
+      // Document Content
       doc.setFont("times", "normal");
-      doc.text(lines[i], margin, cursorY);
-      cursorY += 7;
-    }
+      doc.setFontSize(11);
+      
+      // Clean paragraphs by splitting by double newline to maintain structure
+      const paragraphs = finalContent.split('\n');
+      let pageCount = 1;
 
-    // Stamp at bottom
-    if (formData.lawyerStamp) {
-      if (cursorY > pageHeight - 55) {
-        addFooter(pageCount);
-        doc.addPage();
-        pageCount++;
-        cursorY = 25;
+      const addFooter = (pNum: number) => {
+        doc.setFont("times", "italic");
+        doc.setFontSize(8);
+        doc.setDrawColor(200, 200, 200);
+        doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
+        doc.text(`Page ${pNum} | AI Legal Notice Generator | Confidential`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+      };
+
+      for (let pTag of paragraphs) {
+        if (!pTag.trim()) {
+           cursorY += 4; // Add small spacing for empty lines
+           continue; 
+        }
+        
+        const wrappedLines = doc.splitTextToSize(pTag.trim(), maxLineWidth);
+        
+        for (let i = 0; i < wrappedLines.length; i++) {
+          if (cursorY > pageHeight - 25) {
+            addFooter(pageCount);
+            doc.addPage();
+            pageCount++;
+            cursorY = 25;
+            doc.setFont("times", "normal");
+            doc.setFontSize(11);
+          }
+          doc.text(wrappedLines[i], margin, cursorY);
+          cursorY += 6.5; 
+        }
+        cursorY += 2; // Extra paragraph spacing
       }
-      addImageToPdf(doc, formData.lawyerStamp, margin, cursorY + 5, 38, 38);
-    }
 
-    addFooter(pageCount);
-    doc.save(`${title.replace(/\s+/g, '_')}.pdf`);
+      // Stamp at bottom
+      if (formData.lawyerStamp) {
+        if (cursorY > pageHeight - 55) {
+          addFooter(pageCount);
+          doc.addPage();
+          pageCount++;
+          cursorY = 25;
+        }
+        addImageToPdf(doc, formData.lawyerStamp, margin, cursorY + 5, 38, 38);
+      }
+
+      addFooter(pageCount);
+      doc.save(`${title.replace(/\s+/g, '_')}.pdf`);
+    } catch (e) {
+      console.error("PDF generation failed:", e);
+    }
   };
 
   // Format doc content for display with bold headings
