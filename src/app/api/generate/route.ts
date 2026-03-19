@@ -112,8 +112,8 @@ STRUCTURE:
 - Demand: Clear ask — refund Rs. ${amount} within [7 days] or you will file a police complaint + consumer forum case
 - Closing: Your contact or final warning
 
-TONE: Firm but professional. Not aggressive. Show you know your rights.
-LENGTH: Under 300 words. WhatsApp-friendly paragraphs. Can use 1-2 relevant emojis (⚠️ ✅).`}
+TONE: Firm, professional, and official. No slang. No emojis. Plain text only.
+LENGTH: Under 300 words. Short paragraphs suitable for WhatsApp.`}
 
 OUTPUT: Return ONLY the plain text of the WhatsApp message. No JSON. No markdown. Just the message text.`;
 
