@@ -26,10 +26,27 @@ import {
 import { Send as SendIcon, ArrowRight, ArrowLeft, Wand2, Info, Paperclip, FileCheck, MapPin, Image as ImageIcon, Trash2 } from 'lucide-react';
 
 const ISSUE_TYPES = [
-  'Fraud',
-  'Service Delay',
+  // Consumer & Service
   'Refund Not Given',
+  'Service Delay / Non-Delivery',
+  'Defective Product',
+  'Online Shopping Fraud',
+  // Financial
+  'Cheque Bounce (NI Act)',
+  'Loan Recovery',
+  'Money Not Returned',
+  // Property
+  'Builder / Real Estate Delay',
+  'Tenant Eviction',
+  'Property Dispute',
+  // Employment & Contract
+  'Employment / Salary Issue',
   'Contract Breach',
+  // Fraud & Crime
+  'Fraud / Cheating',
+  'Cyber Fraud / Online Scam',
+  // Other
+  'Medical Negligence',
   'Custom Issue',
 ];
 

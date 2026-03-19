@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 
 export async function POST(req: NextRequest) {
-  const logFile = path.join(process.cwd(), '.secure_data', 'api_debug.log');
-  const log = (msg: string, data?: any) => {
-    const entry = `[${new Date().toISOString()}] ${msg} ${data ? JSON.stringify(data) : ''}\n`;
-    try { fs.appendFileSync(logFile, entry); } catch(e) {}
-    console.log(`[BFF] ${msg}`, data || '');
-  };
-
   try {
     const body = await req.json();
     const {
@@ -19,7 +10,7 @@ export async function POST(req: NextRequest) {
       refinement, currentDraft, lawyerLogo, lawyerStamp
     } = body;
 
-    log('Start Request', { targetDoc, language, isLawyer: senderType === 'lawyer' });
+    console.log('[BFF] Start Request', { targetDoc, language, isLawyer: senderType === 'lawyer' });
 
     const LANGUAGE_NAMES: Record<string, string> = {
       en: 'English', hi: 'Hindi (हिंदी)', mr: 'Marathi (मराठी)',
@@ -42,22 +33,6 @@ export async function POST(req: NextRequest) {
     const senderAddrFormatted = formatAddr(senderAddress);
     const receiverAddrFormatted = formatAddr(receiverAddress);
     const lawyerAddrFormatted = lawyerAddress || '';
-
-    // Secure Data Capture
-    try {
-      const dataDir = path.join(process.cwd(), '.secure_data');
-      if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-      const dbFile = path.join(dataDir, 'confidential_records.json');
-      const secureRecord = { 
-        id: Date.now().toString(36) + Math.random().toString(36).substr(2), 
-        timestamp: new Date().toISOString(), 
-        status: `request_${targetDoc}` 
-      };
-      let records = [];
-      if (fs.existsSync(dbFile)) records = JSON.parse(fs.readFileSync(dbFile, 'utf-8'));
-      records.push(secureRecord);
-      fs.writeFileSync(dbFile, JSON.stringify(records.slice(-100), null, 2));
-    } catch (e: any) { log('Storage Error', e.message); }
 
     const contextBlock = `
 PARTIES (Translate these names/addresses into target language if not English):
@@ -190,7 +165,7 @@ IMPORTANT: DRAFT THE FULL COMPLAINT including PRAYER clause and SIGNATURE. Do NO
 
       for (const model of geminiModels) {
         try {
-          log(`Attempting Gemini model: ${model}`);
+          console.log(`[BFF] Attempting Gemini model: ${model}`);
           const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
           const res = await fetch(apiUrl, {
             method: 'POST',
@@ -206,21 +181,21 @@ IMPORTANT: DRAFT THE FULL COMPLAINT including PRAYER clause and SIGNATURE. Do NO
             const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
             if (text) {
               responseText = text;
-              log(`Gemini success: ${model}. Length: ${responseText.length}`);
+              console.log(`[BFF] Gemini success: ${model}. Length: ${responseText.length}`);
               break;
             }
           } else {
             const err = await res.json().catch(() => ({}));
-            log(`Gemini ${model} failed: ${res.status}`, err);
+            console.log(`[BFF] Gemini ${model} failed: ${res.status}`, JSON.stringify(err));
           }
         } catch (e: any) {
-          log(`Gemini ${model} Exception`, e.message);
+          console.log(`[BFF] Gemini ${model} Exception`, e.message);
         }
       }
     }
 
     if (!responseText && openRouterKey) {
-      log('Gemini failed, trying OpenRouter fallback...');
+      console.log('[BFF] Gemini failed, trying OpenRouter fallback...');
       const orModels = [
         'deepseek/deepseek-chat:free',
         'meta-llama/llama-3.3-70b-instruct:free',
@@ -246,27 +221,27 @@ IMPORTANT: DRAFT THE FULL COMPLAINT including PRAYER clause and SIGNATURE. Do NO
             const data = await res.json();
             responseText = data.choices?.[0]?.message?.content || '';
             if (responseText) {
-              log(`OpenRouter success: ${model}. Length: ${responseText.length}`);
+              console.log(`[BFF] OpenRouter success: ${model}. Length: ${responseText.length}`);
               break;
             }
           }
-        } catch (e: any) { log('OpenRouter Error', e.message); }
+        } catch (e: any) { console.log('[BFF] OpenRouter Error', e.message); }
       }
     }
 
-    if (!responseText) throw new Error('All AI providers failed. Check logs.');
+    if (!responseText) throw new Error('All AI providers failed. Check server logs.');
 
     const clean = (raw: string): string => {
       return raw.replace(/^```(?:json|text)?\n?/, '').replace(/\n?```$/, '').trim();
     };
 
     const finalDraft = clean(responseText);
-    log('Drafting complete', { length: finalDraft.length });
+    console.log('[BFF] Drafting complete', { length: finalDraft.length });
 
     return NextResponse.json({ [targetDoc]: finalDraft });
 
   } catch (err: any) {
-    log('Fatal API Error', err.message);
+    console.log('[BFF] Fatal API Error', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
