@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       - Format: Numbered paragraphs. No markdown bolding (**).
       - Style: Authoritative and legally precise.
       
-      OUTPUT FORMAT: Return ONLY a JSON object with a single key: "${targetDoc}". No markdown boxes.`;
+      OUTPUT FORMAT: Return ONLY valid JSON like {"legalNotice": "full text here"}. The value MUST be a plain STRING with \n for linebreaks. NOT an array. NOT nested JSON. No markdown fences.`;
 
     const geminiKey = process.env.GEMINI_API_KEY;
     const openRouterKey = process.env.OPENROUTER_API_KEY;
@@ -161,33 +161,34 @@ export async function POST(req: NextRequest) {
 
     console.log(`[BFF] AI successfully drafted ${targetDoc}. Length: ${responseText.length}`);
 
-    let finalDraft = '';
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-
-    if (jsonMatch) {
-      try {
-        const parsed = JSON.parse(jsonMatch[0].trim());
-        const draft = parsed[targetDoc] || parsed.text || parsed.content || parsed;
-
-        // If the draft itself is a JSON-like string (recursive issue), try one more parse
-        if (typeof draft === 'string' && draft.trim().startsWith('{')) {
-          try {
-            const inner = JSON.parse(draft);
-            finalDraft = inner[targetDoc] || inner.text || inner;
-          } catch {
-            finalDraft = draft;
+    // Robust extractor — handles string, array, nested JSON, and raw text fallbacks
+    const extractText = (raw: string): string => {
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[0].trim());
+          let draft = parsed[targetDoc] ?? parsed.text ?? parsed.content ?? parsed;
+          // Handle array — Gemini 2.5 sometimes returns array of paragraphs
+          if (Array.isArray(draft)) return draft.join('\n');
+          // Handle nested JSON string
+          if (typeof draft === 'string' && draft.trim().startsWith('{')) {
+            try {
+              const inner = JSON.parse(draft);
+              const innerVal = inner[targetDoc] ?? inner.text ?? inner;
+              if (Array.isArray(innerVal)) return innerVal.join('\n');
+              if (typeof innerVal === 'string') return innerVal;
+            } catch { return draft; }
           }
-        } else {
-          finalDraft = typeof draft === 'object' ? JSON.stringify(draft) : draft;
-        }
-      } catch (e) {
-        console.warn('[BFF] JSON parse failed, extracting raw.');
+          if (typeof draft === 'string') return draft;
+          if (typeof draft === 'object') return JSON.stringify(draft, null, 2);
+        } catch { /* fall through */ }
       }
-    }
+      // Fallback: strip markdown fences and return plain text
+      return raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+    };
 
-    if (!finalDraft) {
-      finalDraft = responseText.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
-    }
+    const finalDraft = extractText(responseText);
+    if (!finalDraft) throw new Error('AI returned an empty document. Please try again.');
 
     return NextResponse.json({ [targetDoc]: finalDraft });
 
