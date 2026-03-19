@@ -425,13 +425,15 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
                       </Tooltip>
 
                       {/* WhatsApp Share */}
-                      {tab.id === 'whatsappMessage' && (
-                        <Tooltip title="Share on WhatsApp">
-                          <IconButton onClick={() => handleWhatsAppShare(tab.content)} size="small" sx={{ bgcolor: 'rgba(37,211,102,0.1)', borderRadius: 2 }}>
-                            <Share2 size={18} color="#25d366" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
+                      <Tooltip title="Share on WhatsApp">
+                        <IconButton
+                          onClick={() => handleWhatsAppShare(tab.content)}
+                          size="small"
+                          sx={{ bgcolor: 'rgba(37,211,102,0.1)', borderRadius: 2 }}
+                        >
+                          <MessageCircle size={18} color="#25d366" />
+                        </IconButton>
+                      </Tooltip>
 
                       {/* Download Word */}
                       <Tooltip title="Download as Word (.doc)">
