@@ -500,6 +500,61 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
                   ) : (
                     // 📄 FORMATTED VIEW MODE
                     <Box sx={{ p: 4 }}>
+                      {/* ── LETTERHEAD (shown when logo/stamp present, Legal Notice tab only) ── */}
+                      {tab.id === 'legalNotice' && (formData.lawyerLogo || formData.lawyerStamp) && (
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            mb: 2,
+                            pb: 2,
+                            borderBottom: '2px solid',
+                            borderColor: 'primary.main',
+                            gap: 2,
+                          }}
+                        >
+                          {/* Logo — left */}
+                          {formData.lawyerLogo ? (
+                            <Box sx={{ flexShrink: 0 }}>
+                              <img
+                                src={formData.lawyerLogo}
+                                alt="Lawyer Logo"
+                                style={{ height: 64, maxWidth: 160, objectFit: 'contain', display: 'block' }}
+                              />
+                            </Box>
+                          ) : <Box sx={{ width: 64 }} />}
+
+                          {/* Firm name — center */}
+                          {formData.senderType === 'lawyer' && (
+                            <Box sx={{ textAlign: 'center', flex: 1 }}>
+                              <Typography variant="subtitle1" fontWeight={800} sx={{ fontFamily: 'Georgia, serif', letterSpacing: 1, textTransform: 'uppercase' }}>
+                                {formData.lawyerName || ''}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontFamily: 'Georgia, serif' }}>
+                                Advocate &amp; Legal Consultant
+                              </Typography>
+                              {formData.lawyerAddress && (
+                                <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'Georgia, serif' }}>
+                                  {formData.lawyerAddress}
+                                </Typography>
+                              )}
+                            </Box>
+                          )}
+
+                          {/* Stamp — right */}
+                          {formData.lawyerStamp ? (
+                            <Box sx={{ flexShrink: 0 }}>
+                              <img
+                                src={formData.lawyerStamp}
+                                alt="Lawyer Stamp"
+                                style={{ height: 72, width: 72, objectFit: 'contain', display: 'block', opacity: 0.9 }}
+                              />
+                            </Box>
+                          ) : <Box sx={{ width: 72 }} />}
+                        </Box>
+                      )}
+
                       {renderFormattedContent(tab.content) || (
                         <Typography color="text.secondary" fontStyle="italic">
                           Drafting will begin when you click this tab.
