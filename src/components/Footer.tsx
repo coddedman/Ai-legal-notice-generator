@@ -58,10 +58,10 @@ export default function Footer() {
             <Scale size={22} color="#6366f1" />
             <Box>
               <Typography variant="subtitle2" fontWeight={800} color="text.primary">
-                My Legal Notice India
+                © {new Date().getFullYear()} My Legal Notice India
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                © {new Date().getFullYear()} · AI-Powered Legal Drafting
+                Free AI Legal Notice Generator
               </Typography>
             </Box>
           </Box>
@@ -69,9 +69,11 @@ export default function Footer() {
           {/* Links */}
           <Box display="flex" gap={3} flexWrap="wrap">
             {[
-              { label: 'Privacy Policy', href: '/privacy' },
-              { label: 'Terms of Service', href: '/terms' },
-              { label: 'Contact', href: 'mailto:support@mylegalnotice.in' },
+              { label: 'About', href: '/about' },
+              { label: 'Contact', href: '/contact' },
+              { label: 'Privacy Policy', href: '/privacy-policy' },
+              { label: 'Terms of Use', href: '/terms-of-use' },
+              { label: 'Disclaimer', href: '/terms-of-use' },
             ].map(link => (
               <Link key={link.label} href={link.href} style={{ textDecoration: 'none' }}>
                 <Typography
@@ -92,7 +94,7 @@ export default function Footer() {
 
         <Box mt={2} textAlign="center">
           <Typography variant="caption" color="text.secondary" sx={{ opacity: 0.6 }}>
-            Governed by Indian law · Jurisdiction: India · Compliant with IT Act 2000 & DPDP Act 2023
+            Built with ❤️ in India | Last Updated: March 2026
           </Typography>
         </Box>
       </Container>
