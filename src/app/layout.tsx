@@ -2,16 +2,16 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import ThemeRegistry from '@/theme/ThemeRegistry';
 
-const APP_URL = 'https://ai-legal-notice-generator.vercel.app';
-const APP_NAME = 'AI Legal Notice Generator India';
+const APP_URL = 'https://mylegalnotice.in';
+const APP_NAME = 'My Legal Notice India';
 const APP_DESCRIPTION =
-  'Free AI-powered legal notice generator for India. Draft professional legal notices, WhatsApp demand messages & consumer complaint drafts in seconds. Covers cheating, fraud, property disputes, service delays & more — compliant with Bharatiya Nyaya Sanhita (BNS) 2023.';
+  'My Legal Notice is India’s leading AI-powered legal notice generator. Draft professional legal notices, WhatsApp demand messages, and consumer complaint drafts in seconds. Compliant with Bharatiya Nyaya Sanhita (BNS) 2023.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
   title: {
-    default: 'AI Legal Notice Generator India — Free BNS 2023 Compliant Notices',
-    template: '%s | AI Legal Notice Generator India',
+    default: 'My Legal Notice India — Free AI BNS 2023 Compliant Notices',
+    template: '%s | My Legal Notice India',
   },
   description: APP_DESCRIPTION,
   keywords: [
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     locale: 'en_IN',
     url: APP_URL,
     siteName: APP_NAME,
-    title: 'AI Legal Notice Generator India — Free & BNS 2023 Compliant',
+    title: 'My Legal Notice India — Free AI & BNS 2023 Compliant',
     description: APP_DESCRIPTION,
     images: [
       {
@@ -62,7 +62,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'AI Legal Notice Generator India',
+    title: 'My Legal Notice India — AI Legal Drafting',
     description: APP_DESCRIPTION,
     images: ['/og-image.png'],
     creator: '@legalnoticeai',
