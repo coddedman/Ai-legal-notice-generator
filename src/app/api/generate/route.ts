@@ -196,12 +196,11 @@ IMPORTANT: DRAFT THE FULL COMPLAINT including PRAYER clause and SIGNATURE. Do NO
     // ── TIER 1: Gemini models ──
     if (geminiKey) {
       const geminiModels = [
-        'gemini-1.5-flash',        // Core alias
-        'gemini-1.5-flash-latest', // specific latest
-        'gemini-1.5-flash-8b',     // Ultra cheap
-        'gemini-2.0-flash',        // New stable flash
-        'gemini-2.0-flash-lite-preview-02-05',
-        'gemini-1.5-pro',          // Pro fallback
+        'gemini-2.0-flash-exp',    // High-perf experiment
+        'gemini-2.0-flash-lite-preview-02-05', 
+        'gemini-1.5-flash',        // Stable fallback
+        'gemini-1.5-flash-latest',
+        'gemini-1.5-pro-latest',
       ];
 
       for (const model of geminiModels) {
