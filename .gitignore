@@ -42,3 +42,5 @@ next-env.d.ts
 
 # secure local data - NEVER commit
 .secure_data/
+
+/src/generated/prisma
