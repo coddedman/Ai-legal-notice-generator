@@ -196,16 +196,17 @@ IMPORTANT: DRAFT THE FULL COMPLAINT including PRAYER clause and SIGNATURE. Do NO
     // ── TIER 1: Gemini models ──
     if (geminiKey) {
       const geminiModels = [
-        'gemini-1.5-flash-latest', // Fast, cost-effective, most reliable
-        'gemini-1.5-flash-8b',     // Even more cost effective
-        'gemini-2.0-flash-lite-preview-02-05', // High efficiency 2.0
-        'gemini-2.0-flash-exp',    // Core 2.0 flash
-        'gemini-1.5-pro-latest',   // Heavyweight fallback
+        'gemini-1.5-flash',        // Core alias
+        'gemini-1.5-flash-latest', // specific latest
+        'gemini-1.5-flash-8b',     // Ultra cheap
+        'gemini-2.0-flash',        // New stable flash
+        'gemini-2.0-flash-lite-preview-02-05',
+        'gemini-1.5-pro',          // Pro fallback
       ];
 
       for (const model of geminiModels) {
         try {
-          console.log(`[BFF] Attempting generation with ${model}...`);
+          console.log(`[BFF] Step: Attempting ${model}...`);
           const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
           const attempt = await fetch(apiUrl, {
             method: 'POST',
@@ -216,9 +217,13 @@ IMPORTANT: DRAFT THE FULL COMPLAINT including PRAYER clause and SIGNATURE. Do NO
             })
           });
 
-          if (attempt.status === 429 || attempt.status === 404) {
-            console.warn(`[BFF] Gemini ${model}: ${attempt.status}, trying next...`);
-            continue;
+          if (!attempt.ok) {
+            const errBody = await attempt.json().catch(() => ({}));
+            console.error(`[BFF] Gemini ${model} failed: ${attempt.status}`, errBody);
+            
+            if (attempt.status === 429 || attempt.status === 404 || attempt.status === 400) {
+              continue;
+            }
           }
 
           if (attempt.ok) {
@@ -227,16 +232,16 @@ IMPORTANT: DRAFT THE FULL COMPLAINT including PRAYER clause and SIGNATURE. Do NO
             responseText = candidate?.content?.parts?.[0]?.text || '';
             
             if (candidate?.finishReason !== 'STOP' && candidate?.finishReason) {
-              console.warn(`[BFF] Gemini ${model} finishReason: ${candidate.finishReason} (might be truncated or filtered)`);
+              console.warn(`[BFF] Gemini ${model} finishReason: ${candidate.finishReason}`);
             }
 
             if (responseText) {
-              console.log(`[BFF] Served by Gemini: ${model}. Length: ${responseText.length}`);
+              console.log(`[BFF] Gemini ${model} success. Length: ${responseText.length}`);
               break;
             }
           }
         } catch (e: any) {
-          console.error(`[BFF] Error with Gemini ${model}:`, e.message);
+          console.error(`[BFF] Catch with Gemini ${model}:`, e.message);
         }
       }
     }
