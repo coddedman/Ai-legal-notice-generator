@@ -193,29 +193,41 @@ OUTPUT: Return ONLY the plain text of the complaint. No JSON. No markdown. Just 
     // ── TIER 1: Gemini models ──
     if (geminiKey) {
       const geminiModels = [
-        'gemini-2.5-flash',        // Latest & best — billing enabled
-        'gemini-2.0-flash-lite',   // Lighter, fast fallback
-        'gemini-flash-latest',     // Alias fallback
-        'gemini-flash-lite-latest',
+        'gemini-1.5-flash',        // Fast, cost-effective, most reliable
+        'gemini-1.5-flash-8b',     // Even more cost effective
+        'gemini-2.0-flash-lite',   // Efficient 2.0 variant
+        'gemini-2.0-flash',        // Core 2.0 flash
+        'gemini-1.5-pro',          // Heavyweight fallback
       ];
+
       for (const model of geminiModels) {
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
-        const attempt = await fetch(apiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { maxOutputTokens: 8192, temperature: 0.7 }
-          })
-        });
-        if (attempt.status === 429 || attempt.status === 404) {
-          console.warn(`[BFF] Gemini ${model}: ${attempt.status}, trying next...`);
-          continue;
-        }
-        if (attempt.ok) {
-          const data = await attempt.json();
-          responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          if (responseText) { console.log(`[BFF] Served by Gemini: ${model}`); break; }
+        try {
+          console.log(`[BFF] Attempting generation with ${model}...`);
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+          const attempt = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { maxOutputTokens: 8192, temperature: 0.7 }
+            })
+          });
+
+          if (attempt.status === 429 || attempt.status === 404) {
+            console.warn(`[BFF] Gemini ${model}: ${attempt.status}, trying next...`);
+            continue;
+          }
+
+          if (attempt.ok) {
+            const data = await attempt.json();
+            responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            if (responseText) {
+              console.log(`[BFF] Served by Gemini: ${model}`);
+              break;
+            }
+          }
+        } catch (e: any) {
+          console.error(`[BFF] Error with Gemini ${model}:`, e.message);
         }
       }
     }

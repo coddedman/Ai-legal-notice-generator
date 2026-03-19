@@ -76,8 +76,8 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
     return () => clearInterval(interval);
   }, [docLoading]);
 
-  const fetchDoc = async (target: string, refinement?: string, langOverride?: string) => {
-    if (!refinement && docs[target]) return;
+  const fetchDoc = async (target: string, refinement?: string, langOverride?: string, force?: boolean) => {
+    if (!force && !refinement && docs[target]) return;
     setDocLoading(prev => ({ ...prev, [target]: true }));
     setFetchError(null);
     try {
@@ -102,12 +102,12 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
     // Clear all cached docs and refetch current tab in new language
     setDocs({ legalNotice: '', whatsappMessage: '', complaintDraft: '' });
     const currentTabId = tabs[tabIndex]?.id || 'legalNotice';
-    setTimeout(() => fetchDoc(currentTabId, undefined, newLang), 50);
+    setTimeout(() => fetchDoc(currentTabId, undefined, newLang, true), 50);
   };
 
   const handleRegenerate = (target: string) => {
     setDocs(prev => ({ ...prev, [target]: '' }));
-    setTimeout(() => fetchDoc(target), 50);
+    setTimeout(() => fetchDoc(target, undefined, undefined, true), 50);
   };
 
   const handleRefine = (e: React.FormEvent) => {
