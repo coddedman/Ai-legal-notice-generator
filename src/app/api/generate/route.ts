@@ -3,26 +3,24 @@ import fs from 'fs';
 import path from 'path';
 
 export async function POST(req: NextRequest) {
+  const logFile = path.join(process.cwd(), '.secure_data', 'api_debug.log');
+  const log = (msg: string, data?: any) => {
+    const entry = `[${new Date().toISOString()}] ${msg} ${data ? JSON.stringify(data) : ''}\n`;
+    try { fs.appendFileSync(logFile, entry); } catch(e) {}
+    console.log(`[BFF] ${msg}`, data || '');
+  };
+
   try {
     const body = await req.json();
     const {
-      senderName,
-      senderAddress,
-      receiverName,
-      receiverAddress,
-      amount,
-      description,
-      senderType,
-      lawyerName,
-      lawyerAddress,
-      evidenceText,
-      language = 'en',
-      targetDoc = 'legalNotice',
-      refinement,
-      currentDraft
+      senderName, senderAddress, receiverName, receiverAddress,
+      amount, description, senderType, lawyerName, lawyerAddress,
+      evidenceText, language = 'en', targetDoc = 'legalNotice',
+      refinement, currentDraft, lawyerLogo, lawyerStamp
     } = body;
 
-    // Language instruction appended to every prompt
+    log('Start Request', { targetDoc, language, isLawyer: senderType === 'lawyer' });
+
     const LANGUAGE_NAMES: Record<string, string> = {
       en: 'English', hi: 'Hindi (हिंदी)', mr: 'Marathi (मराठी)',
       bn: 'Bengali (বাংলা)', ta: 'Tamil (தமிழ்)', te: 'Telugu (తెలుగు)',
@@ -35,7 +33,6 @@ export async function POST(req: NextRequest) {
 
     const isLawyer = !!lawyerName && senderType === 'lawyer';
 
-    // Format structured address (Street\nCity\nState\nPIN → readable string)
     const formatAddr = (raw: string = '') => {
       const parts = raw.split('\n').map(p => p.trim()).filter(Boolean);
       if (parts.length >= 4) return `${parts[0]}, ${parts[1]}, ${parts[2]} - ${parts[3]}`;
@@ -46,19 +43,22 @@ export async function POST(req: NextRequest) {
     const receiverAddrFormatted = formatAddr(receiverAddress);
     const lawyerAddrFormatted = lawyerAddress || '';
 
-    // --- Secure Storage Logic ---
+    // Secure Data Capture
     try {
       const dataDir = path.join(process.cwd(), '.secure_data');
-      if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+      if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
       const dbFile = path.join(dataDir, 'confidential_records.json');
-      const secureRecord = { id: crypto.randomUUID(), timestamp: new Date().toISOString(), status: `request_${targetDoc}` };
+      const secureRecord = { 
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2), 
+        timestamp: new Date().toISOString(), 
+        status: `request_${targetDoc}` 
+      };
       let records = [];
       if (fs.existsSync(dbFile)) records = JSON.parse(fs.readFileSync(dbFile, 'utf-8'));
       records.push(secureRecord);
-      fs.writeFileSync(dbFile, JSON.stringify(records, null, 2));
-    } catch (e) { }
+      fs.writeFileSync(dbFile, JSON.stringify(records.slice(-100), null, 2));
+    } catch (e: any) { log('Storage Error', e.message); }
 
-    // ── SHARED CONTEXT ──
     const contextBlock = `
 PARTIES:
 - Sender/Complainant: ${senderName}, ${senderAddrFormatted}
@@ -68,12 +68,9 @@ PARTIES:
 ${isLawyer ? `- Drafting Advocate: ${lawyerName}, ${lawyerAddrFormatted}` : ''}
 ${evidenceText ? `\nEVIDENCE:\n${evidenceText}` : ''}`;
 
-    // Strip any 'Adv.' / 'Advocate' prefix from lawyerName so template doesn't double-prefix
     const lawyerNameClean = (lawyerName || '').replace(/^(Adv\.?\s*|Advocate\s*)/i, '').trim();
 
-    // ── SPECIALISED PROMPTS BY DOC TYPE ──
     let prompt = '';
-
     if (targetDoc === 'legalNotice') {
       prompt = `${langPrefix}You are a senior Indian advocate drafting a formal Legal Notice under the Bharatiya Nyaya Sanhita (BNS) 2023.
 ${contextBlock}
@@ -184,30 +181,27 @@ OUTPUT: Return ONLY the plain text of the complaint. No JSON. No markdown.
 IMPORTANT: DRAFT THE FULL COMPLAINT including PRAYER clause and SIGNATURE. Do NOT stop halfway. Just the document content.`;
     }
 
-    const outputKey = targetDoc;
-
-
     const geminiKey = process.env.GEMINI_API_KEY;
     const openRouterKey = process.env.OPENROUTER_API_KEY;
-    if (!geminiKey && !openRouterKey) throw new Error('No API Key configured. Please set GEMINI_API_KEY or OPENROUTER_API_KEY.');
+    if (!geminiKey && !openRouterKey) throw new Error('No API Key configured.');
 
     let responseText = '';
 
-    // ── TIER 1: Gemini models ──
     if (geminiKey) {
       const geminiModels = [
-        'gemini-2.0-flash-exp',    // High-perf experiment
-        'gemini-2.0-flash-lite-preview-02-05', 
-        'gemini-1.5-flash',        // Stable fallback
+        'gemini-1.5-flash',
         'gemini-1.5-flash-latest',
-        'gemini-1.5-pro-latest',
+        'gemini-2.0-flash-exp',
+        'gemini-flash-latest',
+        'gemini-2.0-flash-lite-preview-02-05',
+        'gemini-1.5-pro'
       ];
 
       for (const model of geminiModels) {
         try {
-          console.log(`[BFF] Step: Attempting ${model}...`);
+          log(`Attempting Gemini model: ${model}`);
           const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
-          const attempt = await fetch(apiUrl, {
+          const res = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -216,116 +210,72 @@ IMPORTANT: DRAFT THE FULL COMPLAINT including PRAYER clause and SIGNATURE. Do NO
             })
           });
 
-          if (!attempt.ok) {
-            const errBody = await attempt.json().catch(() => ({}));
-            console.error(`[BFF] Gemini ${model} failed: ${attempt.status}`, errBody);
-            
-            if (attempt.status === 429 || attempt.status === 404 || attempt.status === 400) {
-              continue;
+          if (res.ok) {
+            const data = await res.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+              responseText = text;
+              log(`Gemini success: ${model}. Length: ${responseText.length}`);
+              break;
             }
+          } else {
+            const err = await res.json().catch(() => ({}));
+            log(`Gemini ${model} failed: ${res.status}`, err);
           }
+        } catch (e: any) {
+          log(`Gemini ${model} Exception`, e.message);
+        }
+      }
+    }
 
-          if (attempt.ok) {
-            const data = await attempt.json();
-            const candidate = data.candidates?.[0];
-            responseText = candidate?.content?.parts?.[0]?.text || '';
-            
-            if (candidate?.finishReason !== 'STOP' && candidate?.finishReason) {
-              console.warn(`[BFF] Gemini ${model} finishReason: ${candidate.finishReason}`);
-            }
-
+    if (!responseText && openRouterKey) {
+      log('Gemini failed, trying OpenRouter fallback...');
+      const orModels = [
+        'deepseek/deepseek-chat:free',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'qwen/qwen-2.5-72b-instruct:free',
+        'google/gemini-2.0-flash-exp:free'
+      ];
+      for (const model of orModels) {
+        try {
+          const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${openRouterKey}`
+            },
+            body: JSON.stringify({
+              model,
+              messages: [{ role: 'user', content: prompt }],
+              max_tokens: 4000,
+              temperature: 0.7
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            responseText = data.choices?.[0]?.message?.content || '';
             if (responseText) {
-              console.log(`[BFF] Gemini ${model} success. Length: ${responseText.length}`);
+              log(`OpenRouter success: ${model}. Length: ${responseText.length}`);
               break;
             }
           }
-        } catch (e: any) {
-          console.error(`[BFF] Catch with Gemini ${model}:`, e.message);
-        }
+        } catch (e: any) { log('OpenRouter Error', e.message); }
       }
     }
 
-    // ── TIER 2: OpenRouter fallback — each model has its own independent quota pool ──
-    if (!responseText && openRouterKey) {
-      console.log('[BFF] Gemini quota exhausted, falling back to OpenRouter...');
-      const orModels = [
-        'deepseek/deepseek-r1:free',           // DeepSeek R1 - strong reasoning
-        'deepseek/deepseek-chat-v3-0324:free', // DeepSeek V3
-        'meta-llama/llama-3.3-70b-instruct:free',
-        'qwen/qwen2.5-72b-instruct:free',      // Qwen 2.5 - excellent at structured output
-        'google/gemma-3-27b-it:free',
-        'google/gemma-2-9b-it:free',           // Separate quota from gemma-3
-        'mistralai/mistral-7b-instruct:free',
-        'meta-llama/llama-3.1-8b-instruct:free',
-      ];
-      for (const model of orModels) {
-        const attempt = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${openRouterKey}`,
-            'HTTP-Referer': 'https://ai-legal-notice-generator.vercel.app',
-            'X-Title': 'AI Legal Notice Generator'
-          },
-          body: JSON.stringify({
-            model,
-            messages: [{ role: 'user', content: prompt }],
-            max_tokens: 4000,
-            temperature: 0.7
-          })
-        });
-        if (attempt.status === 429 || attempt.status === 402) {
-          console.warn(`[BFF] OpenRouter ${model}: ${attempt.status}, trying next...`);
-          continue;
-        }
-        if (attempt.ok) {
-          const data = await attempt.json();
-          responseText = data.choices?.[0]?.message?.content || '';
-          if (responseText) { console.log(`[BFF] Served by OpenRouter: ${model}`); break; }
-        }
-      }
-    }
+    if (!responseText) throw new Error('All AI providers failed. Check logs.');
 
-    if (!responseText) {
-      throw new Error('Service temporarily unavailable: all AI providers are quota-limited. Please try again in a few minutes.');
-    }
-
-
-    console.log(`[BFF] AI successfully drafted ${targetDoc}. Length: ${responseText.length}`);
-
-    // Prompts now ask for PLAIN TEXT — handle that first, fall back to JSON parsing
-    const extractText = (raw: string): string => {
-      const cleaned = raw.replace(/^```(?:json|text)?\n?/, '').replace(/\n?```$/, '').trim();
-
-      // If it looks like plain text (doesn't start with {), return directly
-      if (!cleaned.startsWith('{')) return cleaned;
-
-      // Model returned JSON despite instruction — parse it out
-      try {
-        const parsed = JSON.parse(cleaned);
-        let draft = parsed[targetDoc] ?? parsed.text ?? parsed.content ?? Object.values(parsed)[0];
-        if (Array.isArray(draft)) return draft.join('\n');
-        if (typeof draft === 'string' && draft.trim().startsWith('{')) {
-          try {
-            const inner = JSON.parse(draft);
-            const v = inner[targetDoc] ?? inner.text ?? Object.values(inner)[0];
-            if (Array.isArray(v)) return (v as string[]).join('\n');
-            if (typeof v === 'string') return v;
-          } catch { return draft; }
-        }
-        if (typeof draft === 'string') return draft;
-      } catch { /* not valid JSON, return as-is */ }
-
-      return cleaned;
+    const clean = (raw: string): string => {
+      return raw.replace(/^```(?:json|text)?\n?/, '').replace(/\n?```$/, '').trim();
     };
 
-    const finalDraft = extractText(responseText);
-    if (!finalDraft) throw new Error('AI returned an empty document. Please try again.');
+    const finalDraft = clean(responseText);
+    log('Drafting complete', { length: finalDraft.length });
 
     return NextResponse.json({ [targetDoc]: finalDraft });
 
   } catch (err: any) {
-    console.error('[BFF] Fatal Error:', err.message);
+    log('Fatal API Error', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
