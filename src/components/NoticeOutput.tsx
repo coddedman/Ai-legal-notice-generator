@@ -22,7 +22,32 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { NoticeFormData, LANGUAGES } from './NoticeForm';
+import { NextPage } from 'next';
+import dynamic from 'next/dynamic';
 import { TextField, InputAdornment } from '@mui/material';
+
+// Dynamic import for Quill to avoid SSR issues
+const ReactQuill = dynamic(() => import('react-quill-new'), { 
+  ssr: false,
+  loading: () => <Box sx={{ p: 4, textAlign: 'center' }}><Loader2 size={24} className="animate-spin" /></Box>
+});
+
+const QUILL_MODULES = {
+  toolbar: [
+    [{ 'header': [1, 2, 3, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+    [{ 'align': [] }],
+    ['clean']
+  ],
+};
+
+const QUILL_FORMATS = [
+  'header',
+  'bold', 'italic', 'underline', 'strike',
+  'list', 'bullet',
+  'align',
+];
 
 interface OutputProps {
   initialData: {
@@ -133,6 +158,30 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
     { id: 'complaintDraft', label: 'Complaint Draft', icon: <FilePenLine size={18} />, content: docs.complaintDraft, title: 'Consumer Court / Police Complaint' },
   ];
 
+  const handleToggleEdit = (tabId: string) => {
+    const isEnteringEdit = !editMode[tabId];
+    
+    if (isEnteringEdit) {
+      const content = docs[tabId as keyof typeof docs];
+      // If it's plain text (no HTML tags), convert it to basic HTML blocks for Quill
+      if (content && !/<[a-z][\s\S]*>/i.test(content)) {
+        const html = content.split('\n').map(line => {
+          const trimmed = line.trim();
+          if (!trimmed) return '';
+          const isHeading = /^(LEGAL NOTICE|FACTS|LEGAL GROUNDS|DEMANDS|ULTIMATUM|SUBJECT:|TO:|FROM:|NOTICE|PRAYER)/i.test(trimmed);
+          const isNumbered = /^\d+\./.test(trimmed);
+          
+          if (isHeading) return `<h3><strong>${trimmed}</strong></h3>`;
+          if (isNumbered) return `<p><strong>${line}</strong></p>`;
+          return `<p>${line}</p>`;
+        }).filter(Boolean).join('');
+        setDocs(prev => ({ ...prev, [tabId]: html }));
+      }
+    }
+    
+    setEditMode(prev => ({ ...prev, [tabId]: !prev[tabId] }));
+  };
+
   const handleCopy = (index: number, content: string) => {
     navigator.clipboard.writeText(content);
     setCopiedIndex(index);
@@ -145,7 +194,14 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
   };
 
   const handleDownloadDocx = (title: string, content: string) => {
-    // Simple .doc (HTML blob) as a widely-supported approach
+    // Detect if content is HTML or plain text
+    const isHtml = /<[a-z][\s\S]*>/i.test(content);
+    
+    // Format content appropriately for the .doc blob
+    const bodyContent = isHtml 
+      ? content 
+      : content.split('\n').map(line => `<p>${line || '&nbsp;'}</p>`).join('');
+
     const html = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' 
             xmlns:w='urn:schemas-microsoft-com:office:word'
@@ -154,12 +210,16 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
       <style>
         body { font-family: 'Times New Roman', serif; font-size: 12pt; margin: 2cm; }
         h1 { text-align: center; font-size: 14pt; text-transform: uppercase; }
-        p { line-height: 1.8; text-align: justify; }
+        h2, h3 { color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+        p { line-height: 1.8; text-align: justify; margin-bottom: 12pt; }
+        ul, ol { margin-left: 20pt; margin-bottom: 12pt; }
+        li { margin-bottom: 4pt; }
+        strong { font-weight: bold; }
       </style></head>
       <body>
         <h1>${title}</h1>
-        <hr/>
-        ${content.split('\n').map(line => `<p>${line || '&nbsp;'}</p>`).join('')}
+        <hr style="border: 1px solid #6366f1;"/>
+        ${bodyContent}
       </body></html>`;
     const blob = new Blob([html], { type: 'application/msword' });
     const url = URL.createObjectURL(blob);
@@ -196,6 +256,31 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
     const maxLineWidth = pageWidth - margin * 2;
 
     let cursorY = 15;
+
+    // Helper to clean HTML for simple PDF text rendering
+    const cleanContentForPDF = (html: string) => {
+      if (!/<[a-z][\s\S]*>/i.test(html)) return html;
+      
+      let text = html
+        .replace(/<\/p>/gi, '\n\n')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/li>/gi, '\n')
+        .replace(/<li>/gi, '• ')
+        .replace(/<h\d[^>]*>/gi, '\n\n')
+        .replace(/<\/h\d>/gi, '\n')
+        .replace(/<[^>]+>/g, '');
+        
+      // Decode common HTML entities
+      return text
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .trim();
+    };
+
+    const finalContent = cleanContentForPDF(content);
 
     // ---- LETTERHEAD ----
     if (formData.lawyerLogo) {
@@ -267,7 +352,7 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
     // Document Content
     doc.setFont("times", "normal");
     doc.setFontSize(11);
-    const lines = doc.splitTextToSize(content, maxLineWidth);
+    const lines = doc.splitTextToSize(finalContent, maxLineWidth);
     let pageCount = 1;
 
     const addFooter = (pNum: number) => {
@@ -308,6 +393,29 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
   // Format doc content for display with bold headings
   const renderFormattedContent = (content: string) => {
     if (!content) return null;
+
+    // Detect if content is HTML (from Quill) or plain text
+    const isHtml = /<[a-z][\s\S]*>/i.test(content);
+
+    if (isHtml) {
+      return (
+        <Box 
+          className="quill-viewer"
+          sx={{
+            fontFamily: 'serif',
+            fontSize: '0.9rem',
+            lineHeight: 1.85,
+            color: 'text.primary',
+            '& p': { mb: 1.5 },
+            '& h1, & h2, & h3': { color: 'primary.main', fontWeight: 700, mb: 1.5, mt: 3, borderBottom: '1px solid', borderColor: 'divider', pb: 0.5 },
+            '& strong': { fontWeight: 700 },
+            '& ul, & ol': { pl: 4, mb: 2 }
+          }}
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
+      );
+    }
+
     return content.split('\n').map((line, i) => {
       const isMajorHeading = /^(LEGAL NOTICE|FACTS|LEGAL GROUNDS|DEMANDS|ULTIMATUM|SUBJECT:|TO:|FROM:|NOTICE|PRAYER)/i.test(line.trim());
       const isNumberedClause = /^\d+\./.test(line.trim());
@@ -420,7 +528,7 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
                       {/* Edit Mode Toggle */}
                       <Tooltip title={editMode[tab.id] ? "Save Edit" : "Edit Directly"}>
                         <IconButton
-                          onClick={() => setEditMode(prev => ({ ...prev, [tab.id]: !prev[tab.id] }))}
+                          onClick={() => handleToggleEdit(tab.id)}
                           size="small"
                           sx={{ bgcolor: editMode[tab.id] ? 'rgba(16,185,129,0.15)' : 'rgba(99,102,241,0.1)', borderRadius: 2 }}
                         >
@@ -509,7 +617,7 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
                       <Pencil size={13} color="#10b981" />
                       <Typography variant="caption" color="#10b981" fontWeight={700}>EDIT MODE — Type freely to make changes</Typography>
                       <Box sx={{ ml: 'auto', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 0.5 }}
-                        onClick={() => setEditMode(prev => ({ ...prev, [tab.id]: false }))}>
+                        onClick={() => handleToggleEdit(tab.id)}>
                         <CheckCircle2 size={14} color="#10b981" />
                         <Typography variant="caption" color="#10b981" fontWeight={700}>Done</Typography>
                       </Box>
@@ -531,25 +639,47 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
                       <Typography color="error" fontWeight={600}>{fetchError}</Typography>
                     </Box>
                   ) : editMode[tab.id] ? (
-                    // ✏️ DIRECT EDIT MODE — full-height auto-resize textarea
-                    <Box sx={{ p: 3 }}>
-                      <textarea
-                        autoFocus
+                    // ✏️ REAL RICH TEXT EDITOR
+                    <Box sx={{ 
+                      p: 0, 
+                      '& .quill': { border: 'none' },
+                      '& .ql-toolbar': { 
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+                        border: 'none',
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 10,
+                        backdropFilter: 'blur(10px)',
+                        px: 2
+                      },
+                      '& .ql-container': { 
+                        fontFamily: 'serif', 
+                        fontSize: '0.95rem',
+                        minHeight: '400px',
+                        border: 'none'
+                      },
+                      '& .ql-editor': {
+                        p: 3,
+                        lineHeight: '1.85'
+                      },
+                      '& .ql-stroke': {
+                        stroke: theme.palette.mode === 'dark' ? '#cbd5e1 !important' : '#475569 !important'
+                      },
+                      '& .ql-fill': {
+                        fill: theme.palette.mode === 'dark' ? '#cbd5e1 !important' : '#475569 !important'
+                      },
+                      '& .ql-picker': {
+                        color: theme.palette.mode === 'dark' ? '#cbd5e1 !important' : '#475569 !important'
+                      }
+                    }}>
+                      <ReactQuill
+                        theme="snow"
                         value={docs[tab.id]}
-                        onChange={(e) => setDocs(prev => ({ ...prev, [tab.id]: e.target.value }))}
-                        style={{
-                          width: '100%',
-                          minHeight: '400px',
-                          fontFamily: 'Georgia, Times New Roman, serif',
-                          fontSize: '0.9rem',
-                          lineHeight: '1.85',
-                          color: theme.palette.mode === 'dark' ? '#e2e8f0' : '#1e293b',
-                          background: 'transparent',
-                          border: 'none',
-                          outline: 'none',
-                          resize: 'vertical',
-                          padding: 0,
-                        }}
+                        onChange={(val) => setDocs(prev => ({ ...prev, [tab.id]: val }))}
+                        modules={QUILL_MODULES}
+                        formats={QUILL_FORMATS}
                       />
                     </Box>
                   ) : (
