@@ -263,7 +263,7 @@ export default function Home() {
           </Box>
         )}
 
-        {generatedData && !loading && lastFormData && (
+        {generatedData && !loading && lastFormData && minimized && (
           <Box mt={5}>
             <NoticeOutput initialData={generatedData} formData={lastFormData} />
           </Box>
