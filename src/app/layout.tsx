@@ -103,7 +103,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en-IN" suppressHydrationWarning>
-      <head>
+      <head suppressHydrationWarning>
         {/* Structured Data — JSON-LD for Google */}
         <script
           type="application/ld+json"
