@@ -725,6 +725,7 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
         {/* Navigation Buttons */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
           <Button
+            type="button"
             disabled={activeStep === 0 || loading}
             onClick={handleBack}
             startIcon={<ArrowLeft size={18} />}
@@ -753,6 +754,7 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
             </Button>
           ) : (
             <Button
+              type="button"
               variant="contained"
               onClick={handleNext}
               disabled={loading}

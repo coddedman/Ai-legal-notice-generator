@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { Container, Typography, Box, Paper, Snackbar, Alert, CircularProgress, IconButton } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { ColorModeContext } from '@/theme/ThemeRegistry';
@@ -11,7 +11,7 @@ import { ShieldCheck, Scale, FileSignature, Sun, Moon } from 'lucide-react';
 export default function Home() {
   const theme = useTheme();
   const colorMode = useContext(ColorModeContext);
-  
+
   const [loading, setLoading] = useState(false);
   const [generatedData, setGeneratedData] = useState<{
     legalNotice?: string;
@@ -45,7 +45,7 @@ export default function Home() {
     setLastFormData(formData);
     setProgress(5);
     setLoadingStep(0);
-    
+
     // Simulate progress while waiting for AI
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
@@ -58,7 +58,7 @@ export default function Home() {
     const messageInterval = setInterval(() => {
       setLoadingStep((prev) => (prev < loadingMessages.length - 1 ? prev + 1 : prev));
     }, 3000);
-    
+
     try {
       const res = await fetch('/api/generate', {
         method: 'POST',
@@ -72,19 +72,19 @@ export default function Home() {
 
       const data = await res.json();
       if (data.error) {
-         throw new Error(data.error);
+        throw new Error(data.error);
       }
-      
+
       setProgress(100);
       setGeneratedData({ legalNotice: data.legalNotice });
       setSuccessMsg('Legal Notice drafted successfully! Other drafts will load on click.');
       setMinimized(true); // MINIMIZE FORM ON SUCCESS
-      
+
       // Scroll to result smoothly
       setTimeout(() => {
-         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
       }, 300);
-      
+
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.');
     } finally {
@@ -98,13 +98,13 @@ export default function Home() {
     <Box sx={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', pb: 10 }}>
       {/* Theme Toggle Button */}
       <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}>
-        <IconButton onClick={colorMode.toggleColorMode} color="inherit" disabled={loading} sx={{ 
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-            border: '1px solid',
-            borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-            backdropFilter: 'blur(10px)',
-            '&:hover': { bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }
-          }}>
+        <IconButton onClick={colorMode.toggleColorMode} color="inherit" disabled={loading} sx={{
+          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+          border: '1px solid',
+          borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+          backdropFilter: 'blur(10px)',
+          '&:hover': { bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }
+        }}>
           {theme.palette.mode === 'dark' ? <Sun size={20} color={theme.palette.primary.light} /> : <Moon size={20} color={theme.palette.primary.main} />}
         </IconButton>
       </Box>
@@ -122,19 +122,19 @@ export default function Home() {
           zIndex: -1,
         }}
       />
-      
+
       <Container maxWidth="md" sx={{ pt: { xs: 8, md: 10 } }}>
         {!minimized && (
           <Box textAlign="center" mb={6} className="animate-fade-in">
             <Box display="flex" justifyContent="center" gap={2} mb={3}>
               <Box p={2} borderRadius="50%" bgcolor="rgba(99,102,241,0.1)" color="primary.main">
-                 <Scale size={32} />
+                <Scale size={32} />
               </Box>
               <Box p={2} borderRadius="50%" bgcolor="rgba(16,185,129,0.1)" color="success.main">
-                 <ShieldCheck size={32} />
+                <ShieldCheck size={32} />
               </Box>
               <Box p={2} borderRadius="50%" bgcolor="rgba(139,92,246,0.1)" color="secondary.main">
-                 <FileSignature size={32} />
+                <FileSignature size={32} />
               </Box>
             </Box>
             <Typography
@@ -158,11 +158,11 @@ export default function Home() {
           </Box>
         )}
 
-        <Paper 
+        <Paper
           elevation={0}
           className="glass-panel animate-fade-in"
-          sx={{ 
-            p: minimized ? 2 : { xs: 3, md: 5 }, 
+          sx={{
+            p: minimized ? 2 : { xs: 3, md: 5 },
             borderRadius: 4,
             transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
             mb: 4,
@@ -183,27 +183,27 @@ export default function Home() {
               )}
             </Box>
             {minimized && (
-               <Box 
-                 component="button" 
-                 onClick={() => setMinimized(false)}
-                 sx={{ 
-                   bgcolor: 'primary.main', 
-                   color: 'white', 
-                   px: 2, 
-                   py: 1, 
-                   borderRadius: 2, 
-                   border: 'none', 
-                   cursor: 'pointer',
-                   fontWeight: 600,
-                   fontSize: '0.875rem',
-                   '&:hover': { bgcolor: 'primary.dark' }
-                 }}
-               >
-                 Edit Details
-               </Box>
+              <Box
+                component="button"
+                onClick={() => setMinimized(false)}
+                sx={{
+                  bgcolor: 'primary.main',
+                  color: 'white',
+                  px: 2,
+                  py: 1,
+                  borderRadius: 2,
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  '&:hover': { bgcolor: 'primary.dark' }
+                }}
+              >
+                Edit Details
+              </Box>
             )}
           </Box>
-          
+
           <Box sx={{ mt: minimized ? 0 : 4 }}>
             {!minimized && (
               <NoticeForm onSubmit={handleGenerate} loading={loading} initialData={lastFormData || undefined} />
@@ -214,51 +214,51 @@ export default function Home() {
         {loading && (
           <Box mt={6} display="flex" flexDirection="column" alignItems="center" className="animate-fade-in" sx={{ width: '100%' }}>
             <Box sx={{ width: '100%', mb: 4, position: 'relative' }}>
-               <Box 
-                 sx={{ 
-                   height: 10, 
-                   width: '100%', 
-                   bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                   borderRadius: 5,
-                   overflow: 'hidden'
-                 }}
-               >
-                 <Box 
-                   sx={{ 
-                     height: '100%', 
-                     width: `${progress}%`, 
-                     background: 'linear-gradient(90deg, #6366f1 0%, #a855f7 100%)',
-                     transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
-                     boxShadow: '0 0 10px rgba(99, 102, 241, 0.5)'
-                   }} 
-                 />
-               </Box>
-               <Typography variant="caption" sx={{ mt: 1, display: 'block', textAlign: 'right', fontWeight: 600, color: 'primary.main', opacity: 0.8 }}>
-                 {progress}% Completed
-               </Typography>
+              <Box
+                sx={{
+                  height: 10,
+                  width: '100%',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                  borderRadius: 5,
+                  overflow: 'hidden'
+                }}
+              >
+                <Box
+                  sx={{
+                    height: '100%',
+                    width: `${progress}%`,
+                    background: 'linear-gradient(90deg, #6366f1 0%, #a855f7 100%)',
+                    transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 0 10px rgba(99, 102, 241, 0.5)'
+                  }}
+                />
+              </Box>
+              <Typography variant="caption" sx={{ mt: 1, display: 'block', textAlign: 'right', fontWeight: 600, color: 'primary.main', opacity: 0.8 }}>
+                {progress}% Completed
+              </Typography>
             </Box>
 
-            <Box 
-              p={4} 
-              borderRadius={4} 
-              bgcolor={theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.8)'} 
-              border="1px solid" 
+            <Box
+              p={4}
+              borderRadius={4}
+              bgcolor={theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.8)'}
+              border="1px solid"
               borderColor="divider"
-              sx={{ 
-                width: '100%', 
+              sx={{
+                width: '100%',
                 textAlign: 'center',
                 boxShadow: theme.palette.mode === 'dark' ? '0 10px 30px rgba(0,0,0,0.3)' : '0 10px 30px rgba(99, 102, 241, 0.05)',
                 backdropFilter: 'blur(10px)'
               }}
             >
-               <CircularProgress size={32} thickness={5} sx={{ color: 'primary.main', mb: 3 }} />
-               <Typography variant="h6" color="text.primary" fontWeight={700} mb={1}>
-                 {loadingMessages[loadingStep]}
-               </Typography>
-               <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.8 }}>
-                 Our AI Senior Advocate is analyzing Indian Penal Code sections and formulating your official notice. 
-                 This usually takes 20-40 seconds for high-precision legal drafting.
-               </Typography>
+              <CircularProgress size={32} thickness={5} sx={{ color: 'primary.main', mb: 3 }} />
+              <Typography variant="h6" color="text.primary" fontWeight={700} mb={1}>
+                {loadingMessages[loadingStep]}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.8 }}>
+                Our AI Senior Advocate is analyzing Indian Penal Code sections and formulating your official notice.
+                This usually takes 20-40 seconds for high-precision legal drafting.
+              </Typography>
             </Box>
           </Box>
         )}
@@ -269,11 +269,11 @@ export default function Home() {
           </Box>
         )}
       </Container>
-      
+
       <Snackbar open={!!error || !!successMsg} autoHideDuration={6000} onClose={() => { setError(null); setSuccessMsg(null); }} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <Alert 
-          severity={error ? "error" : "success"} 
-          onClose={() => { setError(null); setSuccessMsg(null); }} 
+        <Alert
+          severity={error ? "error" : "success"}
+          onClose={() => { setError(null); setSuccessMsg(null); }}
           sx={{ width: '100%', borderRadius: 2, fontWeight: 500 }}
           variant="filled"
         >
