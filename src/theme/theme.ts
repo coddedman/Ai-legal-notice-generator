@@ -5,104 +5,96 @@ export const getDesignTokens = (mode: PaletteMode) => ({
     mode,
     ...(mode === 'light'
       ? {
-          // palette values for light mode
           background: {
             default: '#f8fafc',
             paper: '#ffffff',
           },
           primary: {
-            main: '#4f46e5',
-            light: '#6366f1',
-            dark: '#3730a3',
+            main: '#1a237e', // Deep Indigo
+            light: '#534bae',
+            dark: '#000051',
           },
           secondary: {
-            main: '#7c3aed',
-            light: '#8b5cf6',
-            dark: '#5b21b6',
+            main: '#c5a059', // Antique Gold
+            light: '#f7d188',
+            dark: '#93722d',
           },
           success: {
-            main: '#059669',
+            main: '#00796b',
           },
           error: {
-            main: '#dc2626',
+            main: '#b71c1c',
           },
           text: {
             primary: '#0f172a',
             secondary: '#475569',
           },
-          divider: 'rgba(0, 0, 0, 0.08)',
+          divider: 'rgba(0, 0, 0, 0.05)',
         }
       : {
-          // palette values for dark mode
           background: {
-            default: '#0f1115',
-            paper: '#1e2128',
+            default: '#0a0b10', // Deep Obsidian
+            paper: '#12141c',
           },
           primary: {
-            main: '#6366f1',
-            light: '#818cf8',
-            dark: '#4f46e5',
+            main: '#7986cb',
+            light: '#9fa8da',
+            dark: '#3f51b5',
           },
           secondary: {
-            main: '#8b5cf6',
-            light: '#a78bfa',
-            dark: '#7c3aed',
+            main: '#d4af37', // Gold
+            light: '#f9e076',
+            dark: '#996515',
           },
           success: {
-            main: '#10b981',
+            main: '#4db6ac',
           },
           error: {
-            main: '#ef4444',
+            main: '#e57373',
           },
           text: {
             primary: '#f8fafc',
             secondary: '#94a3b8',
           },
-          divider: 'rgba(255, 255, 255, 0.08)',
+          divider: 'rgba(255, 255, 255, 0.05)',
         }),
   },
   typography: {
-    fontFamily: '"Outfit", "Roboto", "Helvetica", "Arial", sans-serif',
-    h1: { fontWeight: 700, letterSpacing: '-0.02em', fontSize: '3.5rem' },
-    h2: { fontWeight: 600, letterSpacing: '-0.01em', fontSize: '2.5rem' },
-    h3: { fontWeight: 600, fontSize: '2rem' },
-    h6: { fontWeight: 500 },
-    button: { textTransform: 'none', fontWeight: 500, letterSpacing: '0.01em' },
+    fontFamily: '"Outfit", "Inter", "system-ui", sans-serif',
+    h1: { fontWeight: 800, letterSpacing: '-0.04em', fontSize: '3.75rem', lineHeight: 1.1 },
+    h2: { fontWeight: 800, letterSpacing: '-0.03em', fontSize: '2.75rem', lineHeight: 1.2 },
+    h3: { fontWeight: 700, letterSpacing: '-0.02em', fontSize: '2rem' },
+    h4: { fontWeight: 700, letterSpacing: '-0.01em' },
+    h5: { fontWeight: 600 },
+    h6: { fontWeight: 600, fontSize: '0.925rem' },
+    button: { textTransform: 'none', fontWeight: 600, letterSpacing: '0.02em', fontSize: '0.9rem' },
+    body1: { fontSize: '1rem', lineHeight: 1.6 },
+    body2: { fontSize: '0.875rem', lineHeight: 1.6 },
   },
   shape: {
-    borderRadius: 12,
+    borderRadius: 16,
   },
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
-          boxShadow: 'none',
-          padding: '10px 24px',
+          padding: '12px 28px',
+          borderRadius: 12,
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
           '&:hover': {
+            transform: 'translateY(-1px)',
             boxShadow: mode === 'dark' 
-              ? '0px 0px 20px rgba(99, 102, 241, 0.4)'
-              : '0px 4px 14px rgba(79, 70, 229, 0.4)',
+              ? '0px 10px 25px rgba(121, 134, 203, 0.25)'
+              : '0px 10px 25px rgba(18, 24, 81, 0.15)',
+          },
+          '&:active': {
+            transform: 'translateY(1px)',
           },
         },
-      },
-    },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          '& .MuiOutlinedInput-root': {
-            backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-            backdropFilter: 'blur(10px)',
-            transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-            '&.Mui-focused': {
-              boxShadow: mode === 'dark' ? '0 0 0 2px rgba(99, 102, 241, 0.2)' : '0 0 0 2px rgba(79, 70, 229, 0.2)',
-            },
-            '& fieldset': {
-              borderColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-            },
-            '&:hover fieldset': {
-              borderColor: mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
-            },
-          },
+        containedPrimary: {
+          background: mode === 'dark' 
+            ? 'linear-gradient(135deg, #7986cb 0%, #3f51b5 100%)'
+            : 'linear-gradient(135deg, #1a237e 0%, #311b92 100%)',
         },
       },
     },
@@ -110,8 +102,32 @@ export const getDesignTokens = (mode: PaletteMode) => ({
       styleOverrides: {
         root: {
           backgroundImage: 'none',
-          backgroundColor: mode === 'dark' ? '#1e2128' : '#ffffff',
-          border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)',
+          backgroundColor: mode === 'dark' ? '#12141c' : '#ffffff',
+          borderRadius: 24,
+          border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.04)' : '1px solid rgba(0, 0, 0, 0.04)',
+          boxShadow: mode === 'dark' 
+            ? '0 10px 40px -10px rgba(0,0,0,0.5)' 
+            : '0 10px 40px -10px rgba(26, 35, 126, 0.05)',
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            transition: 'all 0.2s ease',
+            backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
+            '& fieldset': {
+              borderColor: 'rgba(0,0,0,0.1)',
+              borderWidth: '1px',
+            },
+            '&:hover fieldset': {
+              borderColor: mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+            },
+            '&.Mui-focused fieldset': {
+              borderWidth: '2px',
+            },
+          },
         },
       },
     },

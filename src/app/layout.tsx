@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import ThemeRegistry from '@/theme/ThemeRegistry';
+import { Providers } from '@/components/Providers';
 import Script from 'next/script';
 
 const APP_URL = 'https://mylegalnotice.in';
@@ -159,7 +159,7 @@ export default function RootLayout({
         </Script>
       </head>
       <body suppressHydrationWarning>
-        <ThemeRegistry>{children}</ThemeRegistry>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

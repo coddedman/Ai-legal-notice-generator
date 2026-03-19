@@ -1,16 +1,23 @@
 'use client';
 
 import { useState, useContext } from 'react';
-import { Container, Typography, Box, Paper, Snackbar, Alert, CircularProgress, IconButton } from '@mui/material';
+import { Container, Typography, Box, Paper, Snackbar, Alert, CircularProgress, IconButton, Button, Avatar, Menu, MenuItem, ListItemIcon, Divider } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { ColorModeContext } from '@/theme/ThemeRegistry';
 import NoticeForm, { NoticeFormData } from '@/components/NoticeForm';
 import NoticeOutput from '@/components/NoticeOutput';
-import { ShieldCheck, Scale, FileSignature, Sun, Moon } from 'lucide-react';
+import { ShieldCheck, Scale, FileSignature, Sun, Moon, LogIn, UserCircle, LogOut } from 'lucide-react';
+import { useSession, signIn, signOut } from "next-auth/react";
 
 export default function Home() {
   const theme = useTheme();
   const colorMode = useContext(ColorModeContext);
+  const { data: session, status } = useSession();
+
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+  const handleProfileClick = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
+  const handleProfileClose = () => setAnchorEl(null);
 
   const [loading, setLoading] = useState(false);
   const [generatedData, setGeneratedData] = useState<{
@@ -96,8 +103,70 @@ export default function Home() {
 
   return (
     <Box sx={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', pb: 10 }}>
-      {/* Theme Toggle Button */}
-      <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}>
+      {/* User Actions & Theme Toggle */}
+      <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 10, display: 'flex', gap: 1.5, alignItems: 'center' }}>
+        {status === 'authenticated' ? (
+          <>
+            <IconButton 
+              onClick={handleProfileClick}
+              sx={{ p: 0.5, border: '1px solid', borderColor: 'divider' }}
+            >
+              <Avatar 
+                src={session.user?.image || ''} 
+                sx={{ width: 32, height: 32, fontSize: '0.9rem' }}
+              >
+                {session.user?.name?.charAt(0)}
+              </Avatar>
+            </IconButton>
+            <Menu
+              anchorEl={anchorEl}
+              open={open}
+              onClose={handleProfileClose}
+              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+              PaperProps={{
+                sx: {
+                  mt: 1.5,
+                  borderRadius: 3,
+                  minWidth: 180,
+                  boxShadow: '0px 10px 30px rgba(0,0,0,0.1)',
+                  bgcolor: theme.palette.background.paper,
+                }
+              }}
+            >
+              <Box sx={{ px: 2, py: 1.5 }}>
+                <Typography variant="subtitle2" noWrap>{session.user?.name}</Typography>
+                <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+                  {session.user?.email}
+                </Typography>
+              </Box>
+              <Divider sx={{ my: 1 }} />
+              <MenuItem onClick={handleProfileClose}>
+                <ListItemIcon><UserCircle size={18} /></ListItemIcon>
+                My History
+              </MenuItem>
+              <MenuItem onClick={() => { handleProfileClose(); signOut(); }} sx={{ color: 'error.main' }}>
+                <ListItemIcon><LogOut size={18} color={theme.palette.error.main} /></ListItemIcon>
+                Sign Out
+              </MenuItem>
+            </Menu>
+          </>
+        ) : (
+          <Button
+            variant="text"
+            startIcon={<LogIn size={18} />}
+            onClick={() => signIn("google")}
+            disabled={status === 'loading'}
+            sx={{ 
+              borderRadius: 2, 
+              color: 'text.primary',
+              display: { xs: 'none', sm: 'flex' }
+            }}
+          >
+            Sign In
+          </Button>
+        )}
+
         <IconButton onClick={colorMode.toggleColorMode} color="inherit" disabled={loading} sx={{
           bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
           border: '1px solid',
