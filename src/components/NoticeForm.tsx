@@ -32,23 +32,37 @@ const ISSUE_TYPES = [
   'Custom Issue',
 ];
 
+export const LANGUAGES = [
+  { code: 'en',  label: 'English',    native: 'English' },
+  { code: 'hi',  label: 'Hindi',      native: 'हिंदी' },
+  { code: 'mr',  label: 'Marathi',    native: 'मराठी' },
+  { code: 'bn',  label: 'Bengali',    native: 'বাংলা' },
+  { code: 'ta',  label: 'Tamil',      native: 'தமிழ்' },
+  { code: 'te',  label: 'Telugu',     native: 'తెలుగు' },
+  { code: 'gu',  label: 'Gujarati',   native: 'ગુજરાતી' },
+  { code: 'kn',  label: 'Kannada',   native: 'ಕನ್ನಡ' },
+  { code: 'pa',  label: 'Punjabi',    native: 'ਪੰਜਾਬੀ' },
+  { code: 'ml',  label: 'Malayalam',  native: 'മലയാളം' },
+];
+
 export interface NoticeFormData {
   senderType: 'self' | 'lawyer';
   lawyerName?: string;
-  lawyerAddress?: string; // NEW
+  lawyerAddress?: string;
   issueType: string;
   senderName: string;
-  senderAddress: string;  // NEW
+  senderAddress: string;
   receiverName: string;
-  receiverAddress: string; // NEW
+  receiverAddress: string;
   serviceDetails: string;
   amount: string;
   paymentDate: string;
   deliveryDate: string;
   description: string;
   evidenceText?: string;
-  lawyerLogo?: string;   // NEW: Base64 logo
-  lawyerStamp?: string;  // NEW: Base64 stamp
+  lawyerLogo?: string;
+  lawyerStamp?: string;
+  language: string;       // NEW: output language code
 }
 
 interface Props {
@@ -92,6 +106,7 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
       evidenceText: '',
       lawyerLogo: '',
       lawyerStamp: '',
+      language: 'en',
     },
     mode: 'onTouched'
   });
@@ -178,11 +193,12 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
     setValue('lawyerAddress', 'Chamber 412, High Court of Delhi, New Delhi - 110003', { shouldValidate: true });
     setValue('lawyerLogo', DEMO_LOGO);
     setValue('lawyerStamp', DEMO_STAMP);
+    // Keep existing language selection
   };
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, gap: 1 }}>
         <Stepper activeStep={activeStep} alternativeLabel sx={{ flexGrow: 1, '& .MuiStepLabel-label': { mt: 1 } }}>
           {steps.map((label) => (
             <Step key={label}>
@@ -190,16 +206,37 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
             </Step>
           ))}
         </Stepper>
+
+        {/* Language Selector — always visible */}
+        <Controller
+          name="language"
+          control={control}
+          render={({ field }) => (
+            <FormControl size="small" sx={{ minWidth: 130, flexShrink: 0 }}>
+              <InputLabel>Language</InputLabel>
+              <Select {...field} label="Language" disabled={loading}>
+                {LANGUAGES.map(l => (
+                  <MenuItem key={l.code} value={l.code}>
+                    <Box component="span" sx={{ mr: 1 }}>{l.native}</Box>
+                    <Box component="span" sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>{l.label}</Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+        />
+
         {activeStep === 0 && (
            <Tooltip title="Auto-fill with demo data to test the AI">
-             <Button 
-               variant="outlined" 
-               size="small" 
+             <Button
+               type="button"
+               variant="outlined"
+               size="small"
                color="secondary"
                startIcon={<Wand2 size={16} />}
                onClick={fillDemoData}
                disabled={loading}
-               sx={{ ml: 2, borderRadius: 2, textTransform: 'none', minWidth: '140px' }}
+               sx={{ borderRadius: 2, textTransform: 'none', minWidth: '130px', flexShrink: 0 }}
              >
                Try Demo Data
              </Button>

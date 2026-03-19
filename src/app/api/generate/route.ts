@@ -16,10 +16,22 @@ export async function POST(req: NextRequest) {
       lawyerName,
       lawyerAddress,
       evidenceText,
+      language = 'en',
       targetDoc = 'legalNotice',
       refinement,
       currentDraft
     } = body;
+
+    // Language instruction appended to every prompt
+    const LANGUAGE_NAMES: Record<string, string> = {
+      en: 'English', hi: 'Hindi (हिंदी)', mr: 'Marathi (मराठी)',
+      bn: 'Bengali (বাংলা)', ta: 'Tamil (தமிழ்)', te: 'Telugu (తెలుగు)',
+      gu: 'Gujarati (ગુજરાતી)', kn: 'Kannada (ಕನ್ನಡ)',
+      pa: 'Punjabi (ਪੰਜਾਬੀ)', ml: 'Malayalam (മലയാളം)',
+    };
+    const langName = LANGUAGE_NAMES[language] || 'English';
+    const langPrefix = language === 'en' ? '' :
+      `ABSOLUTE REQUIREMENT: Write this ENTIRE document in ${langName}. Every word of the body text must be in ${langName} script. Only law section numbers/citations may remain in English.\n\n`;
 
     const isLawyer = !!lawyerName && senderType === 'lawyer';
 
@@ -60,7 +72,7 @@ ${evidenceText ? `\nEVIDENCE:\n${evidenceText}` : ''}`;
     let prompt = '';
 
     if (targetDoc === 'legalNotice') {
-      prompt = `You are a senior Indian advocate drafting a formal Legal Notice under the Bharatiya Nyaya Sanhita (BNS) 2023.
+      prompt = `${langPrefix}You are a senior Indian advocate drafting a formal Legal Notice under the Bharatiya Nyaya Sanhita (BNS) 2023.
 ${contextBlock}
 
 ${refinement
@@ -99,7 +111,7 @@ RULES:
 OUTPUT: Return ONLY the plain text of the notice. No JSON. No markdown. Just the document.`;
 
     } else if (targetDoc === 'whatsappMessage') {
-      prompt = `You are drafting a WhatsApp demand message for an Indian consumer.
+      prompt = `${langPrefix}You are drafting a WhatsApp demand message for an Indian consumer.
 ${contextBlock}
 
 ${refinement
@@ -118,7 +130,7 @@ LENGTH: Under 300 words. Short paragraphs suitable for WhatsApp.`}
 OUTPUT: Return ONLY the plain text of the WhatsApp message. No JSON. No markdown. Just the message text.`;
 
     } else if (targetDoc === 'complaintDraft') {
-      prompt = `You are an Indian legal expert drafting a formal Consumer Forum Complaint under the Consumer Protection Act 2019.
+      prompt = `${langPrefix}You are an Indian legal expert drafting a formal Consumer Forum Complaint under the Consumer Protection Act 2019.
 ${contextBlock}
 
 ${refinement
