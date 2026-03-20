@@ -20,12 +20,6 @@ export default function GeneratePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/dashboard');
-    }
-  }, [status, router]);
-
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const handleProfileClick = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
@@ -55,6 +49,11 @@ export default function GeneratePage() {
   ];
 
   const handleGenerate = async (formData: NoticeFormData) => {
+    if (status === 'unauthenticated') {
+      signIn();
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSuccessMsg(null);
@@ -124,10 +123,6 @@ export default function GeneratePage() {
     );
   }
 
-  if (status === 'unauthenticated') {
-    return null; // Will be redirected by useEffect
-  }
-
   return (
     <Box sx={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', pb: 10 }}>
       {/* User + Theme Toggle */}
@@ -165,7 +160,7 @@ export default function GeneratePage() {
         ) : (
           <Button
             variant="text" startIcon={<LogIn size={18} />}
-            onClick={() => signIn()} disabled={status === 'loading'}
+            onClick={() => signIn()}
             sx={{ borderRadius: 2, color: 'text.primary', display: { xs: 'none', sm: 'flex' } }}
           >
             Sign In

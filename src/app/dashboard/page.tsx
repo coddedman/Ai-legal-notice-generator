@@ -126,10 +126,16 @@ export default function Dashboard() {
           </Typography>
           <Box display="flex" gap={2} flexWrap="wrap" justifyContent="center">
             <Button
-              variant="contained" size="large" onClick={() => signIn()} startIcon={<LogIn size={18} />}
+              component={Link} href="/generate" variant="contained" size="large" startIcon={<Plus size={18} />}
               sx={{ bgcolor: '#4f46e5', color: 'white', fontWeight: 600, borderRadius: 3, px: 6, py: 1.6, '&:hover': { bgcolor: '#4338ca' }, boxShadow: '0 10px 20px -5px rgba(79,70,229,0.4)' }}
             >
-              Sign In to Start Drafting
+              Start Drafting Your Notice
+            </Button>
+            <Button
+              variant="outlined" size="large" onClick={() => signIn()} startIcon={<LogIn size={18} />}
+              sx={{ borderColor: 'divider', color: 'text.primary', fontWeight: 600, borderRadius: 3, px: 4, py: 1.6, '&:hover': { bgcolor: 'action.hover' } }}
+            >
+              Sign In
             </Button>
           </Box>
         </Box>
