@@ -22,25 +22,34 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientId: process.env.AUTH_DISCORD_ID || "YOUR_DISCORD_ID",
       clientSecret: process.env.AUTH_DISCORD_SECRET || "YOUR_DISCORD_SECRET",
     }),
-    Twitter({
-      clientId: process.env.AUTH_TWITTER_ID || "YOUR_TWITTER_ID",
-      clientSecret: process.env.AUTH_TWITTER_SECRET || "YOUR_TWITTER_SECRET",
-    }),
-    Apple({
-      clientId: process.env.AUTH_APPLE_ID || "YOUR_APPLE_ID",
-      clientSecret: process.env.AUTH_APPLE_SECRET || "YOUR_APPLE_SECRET",
-    }),
+    ...(process.env.AUTH_TWITTER_ID ? [Twitter({
+      clientId: process.env.AUTH_TWITTER_ID,
+      clientSecret: process.env.AUTH_TWITTER_SECRET,
+    })] : []),
+    ...(process.env.AUTH_APPLE_ID ? [Apple({
+      clientId: process.env.AUTH_APPLE_ID,
+      clientSecret: process.env.AUTH_APPLE_SECRET,
+    })] : []),
   ],
   secret: process.env.AUTH_SECRET || "fallback-secret-for-development-only-12345",
   trustHost: true,
+  debug: true,
+  session: {
+    strategy: "jwt",
+  },
   callbacks: {
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
-      },
-    }),
+    jwt: ({ token, user }) => {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    session: ({ session, token }) => {
+      if (token?.id) {
+        session.user.id = token.id as string;
+      }
+      return session;
+    },
   },
   pages: {
     signIn: '/auth/signin',
