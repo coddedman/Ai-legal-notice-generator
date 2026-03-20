@@ -127,15 +127,9 @@ export default function Dashboard() {
           <Box display="flex" gap={2} flexWrap="wrap" justifyContent="center">
             <Button
               variant="contained" size="large" onClick={() => signIn()} startIcon={<LogIn size={18} />}
-              sx={{ bgcolor: '#4f46e5', color: 'white', fontWeight: 600, borderRadius: 3, px: 4, py: 1.4, '&:hover': { bgcolor: '#4338ca' } }}
+              sx={{ bgcolor: '#4f46e5', color: 'white', fontWeight: 600, borderRadius: 3, px: 6, py: 1.6, '&:hover': { bgcolor: '#4338ca' }, boxShadow: '0 10px 20px -5px rgba(79,70,229,0.4)' }}
             >
-              Sign In to Save Documents
-            </Button>
-            <Button
-              component={Link} href="/generate" variant="outlined" size="large" endIcon={<ArrowRight size={18} />}
-              sx={{ borderColor: 'divider', color: 'text.primary', fontWeight: 600, borderRadius: 3, px: 4, py: 1.4, '&:hover': { bgcolor: 'action.hover' } }}
-            >
-              Try Guest Mode
+              Sign In to Start Drafting
             </Button>
           </Box>
         </Box>

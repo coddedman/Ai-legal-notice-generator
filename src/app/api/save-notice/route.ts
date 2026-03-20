@@ -12,8 +12,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'content and type are required' }, { status: 400 });
     }
 
-    // Allow anonymous saves (userId = null) or authenticated saves
-    const userId = session?.user?.id || null;
+    // Require authenticated session to save
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'unauthorized, please sign in' }, { status: 401 });
+    }
+    const userId = session.user.id;
 
     let notice;
     if (noticeId) {

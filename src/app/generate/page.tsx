@@ -1,6 +1,6 @@
 'use client';
-
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Container, Typography, Box, Paper, Snackbar, Alert,
   CircularProgress, IconButton, Button, Avatar, Menu,
@@ -18,6 +18,13 @@ export default function GeneratePage() {
   const theme = useTheme();
   const colorMode = useContext(ColorModeContext);
   const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/dashboard');
+    }
+  }, [status, router]);
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -107,6 +114,19 @@ export default function GeneratePage() {
       clearInterval(messageInterval);
     }
   };
+
+  if (status === 'loading') {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', gap: 2 }}>
+        <CircularProgress size={24} />
+        <Typography variant="body2" color="text.secondary">Loading secure session...</Typography>
+      </Box>
+    );
+  }
+
+  if (status === 'unauthenticated') {
+    return null; // Will be redirected by useEffect
+  }
 
   return (
     <Box sx={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', pb: 10 }}>
