@@ -1,5 +1,5 @@
 'use client';
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Container, Typography, Box, Paper, Snackbar, Alert,
@@ -13,6 +13,16 @@ import NoticeOutput from '@/components/NoticeOutput';
 import { ShieldCheck, Scale, FileSignature, Sun, Moon, LogIn, UserCircle, LogOut, AlertTriangle } from 'lucide-react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import Link from 'next/link';
+
+const LOADING_MESSAGES = [
+  'Analyzing dispute and context...',
+  'Identifying relevant Indian Laws (BNS 2023)...',
+  'Checking legal precedents and deficiency patterns...',
+  'Drafting your formal Legal Notice...',
+  'Structuring the formal Court/Police complaint...',
+  'Refining legal terminology and consequences...',
+  'Finalizing all drafts for you...'
+];
 
 export default function GeneratePage() {
   const theme = useTheme();
@@ -38,18 +48,10 @@ export default function GeneratePage() {
   const [loadingStep, setLoadingStep] = useState(0);
   const [minimized, setMinimized] = useState(false);
 
-  const loadingMessages = [
-    'Analyzing dispute and context...',
-    'Identifying relevant Indian Laws (BNS 2023)...',
-    'Checking legal precedents and deficiency patterns...',
-    'Drafting your formal Legal Notice...',
-    'Structuring the formal Court/Police complaint...',
-    'Refining legal terminology and consequences...',
-    'Finalizing all drafts for you...'
-  ];
-
-  const handleGenerate = async (formData: NoticeFormData) => {
+  const handleGenerate = useCallback(async (formData: NoticeFormData) => {
     if (status === 'unauthenticated') {
+      // Save data to localStorage to survive the login redirect
+      localStorage.setItem('draft_notice_data', JSON.stringify(formData));
       signIn();
       return;
     }
@@ -70,7 +72,7 @@ export default function GeneratePage() {
     }, 1200);
 
     const messageInterval = setInterval(() => {
-      setLoadingStep(prev => (prev < loadingMessages.length - 1 ? prev + 1 : prev));
+      setLoadingStep(prev => (prev < LOADING_MESSAGES.length - 1 ? prev + 1 : prev));
     }, 3000);
 
     try {
@@ -112,7 +114,26 @@ export default function GeneratePage() {
       clearInterval(progressInterval);
       clearInterval(messageInterval);
     }
-  };
+  }, [status]);
+
+  useEffect(() => {
+    // Restore form data from localStorage if it exists
+    const savedData = localStorage.getItem('draft_notice_data');
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        setLastFormData(parsed);
+        
+        // If they just logged in, clear and automatically trigger generation
+        if (status === 'authenticated') {
+          localStorage.removeItem('draft_notice_data');
+          handleGenerate(parsed);
+        }
+      } catch (e) {
+        console.error('Failed to restore draft data', e);
+      }
+    }
+  }, [status, handleGenerate]);
 
   if (status === 'loading') {
     return (
@@ -281,7 +302,7 @@ export default function GeneratePage() {
             >
               <CircularProgress size={32} thickness={5} sx={{ color: 'primary.main', mb: 3 }} />
               <Typography variant="h6" color="text.primary" fontWeight={700} mb={1}>
-                {loadingMessages[loadingStep]}
+                {LOADING_MESSAGES[loadingStep]}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.8 }}>
                 Our AI Senior Advocate is analyzing Indian Penal Code sections and formulating your official notice.

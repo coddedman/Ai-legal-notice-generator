@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Box, Typography, Button, Container, Card, CircularProgress } from '@mui/material';
 import { signIn } from 'next-auth/react';
 import { Scale, ArrowLeft, ShieldCheck } from 'lucide-react';
@@ -12,9 +13,12 @@ export default function SignInPage() {
   const isDark = theme.palette.mode === 'dark';
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+
   const handleSignIn = (provider: string) => {
     setLoadingProvider(provider);
-    signIn(provider, { callbackUrl: '/dashboard' });
+    signIn(provider, { callbackUrl });
   };
 
   return (
