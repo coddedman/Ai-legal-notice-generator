@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Box, Typography, Button, Container, Card, CircularProgress } from '@mui/material';
 import { signIn } from 'next-auth/react';
@@ -9,6 +9,18 @@ import { useTheme } from '@mui/material/styles';
 import Link from 'next/link';
 
 export default function SignInPage() {
+  return (
+    <Suspense fallback={
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Box>
+    }>
+      <SignInContent />
+    </Suspense>
+  );
+}
+
+function SignInContent() {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
