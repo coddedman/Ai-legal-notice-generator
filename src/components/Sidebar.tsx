@@ -57,39 +57,35 @@ export default function Sidebar({ onSessionSelect, sessions = [] }: SidebarProps
         component={Link}
         href="/dashboard"
         sx={{ 
-          p: 1.5, 
+          p: 2, 
           display: 'flex', 
-          alignItems: 'flex-start', 
+          alignItems: 'center', 
           gap: 1.5,
           textDecoration: 'none',
           color: 'inherit',
-          transition: 'background-color 0.2s',
-          '&:hover': { bgcolor: 'rgba(0,0,0,0.03)' }
         }}
       >
         <Avatar 
           src={session?.user?.image || ''} 
-          sx={{ width: 40, height: 40, bgcolor: '#7c3aed', fontSize: '1rem', fontWeight: 600 }}
+          sx={{ width: 44, height: 44, bgcolor: '#4f46e5', fontSize: '1.2rem', fontWeight: 600 }}
         >
           {session?.user?.name?.charAt(0) || 'R'}
         </Avatar>
         <Box sx={{ overflow: 'hidden' }}>
-          <Typography variant="body2" fontWeight={700} noWrap sx={{ lineHeight: 1.2 }}>
+          <Typography variant="body1" fontWeight={700} noWrap sx={{ color: '#1e293b', fontSize: '1rem' }}>
             {session?.user?.name || 'Raja Singh'}
           </Typography>
-          <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', mb: 0.2, fontSize: '0.65rem' }}>
+          <Typography variant="body2" color="text.secondary" noWrap sx={{ display: 'block', mb: 0.2, fontSize: '0.75rem' }}>
             {session?.user?.email || 'er.rajababusingh@gmail.com'}
           </Typography>
-          <Typography variant="caption" fontWeight={700} sx={{ color: '#ef4444', fontSize: '0.65rem' }}>
+          <Typography variant="caption" fontWeight={700} sx={{ color: '#ef4444' }}>
             Free Plan
           </Typography>
         </Box>
       </Box>
 
-      <Divider />
-
       {/* Search Bar */}
-      <Box sx={{ p: 1 }}>
+      <Box sx={{ px: 2, mb: 2 }}>
         <TextField
           fullWidth
           size="small"
@@ -97,10 +93,10 @@ export default function Sidebar({ onSessionSelect, sessions = [] }: SidebarProps
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <Search size={16} color="#94a3b8" />
+                <Search size={18} color="#94a3b8" />
               </InputAdornment>
             ),
-            sx: { borderRadius: 2, bgcolor: '#f8fafc', '& fieldset': { borderColor: '#e2e8f0' }, fontSize: '0.8rem' }
+            sx: { borderRadius: 50, bgcolor: '#f8fafc', '& fieldset': { borderColor: '#e2e8f0' }, height: 44 }
           }}
         />
       </Box>
@@ -109,12 +105,12 @@ export default function Sidebar({ onSessionSelect, sessions = [] }: SidebarProps
       <Box sx={{ px: 1 }}>
         <ListItemButton 
           onClick={() => setOpenRecent(!openRecent)}
-          sx={{ borderRadius: 2, mb: 0.5 }}
+          sx={{ mb: 0.5 }}
         >
           <ListItemIcon sx={{ minWidth: 28 }}>
             {openRecent ? <ChevronDown size={18} /> : <ChevronRightIcon size={18} />}
           </ListItemIcon>
-          <Typography variant="subtitle2" fontWeight={700} color="text.secondary">
+          <Typography variant="body2" fontWeight={700} color="#64748b">
             Recent Sessions
           </Typography>
         </ListItemButton>
@@ -124,14 +120,14 @@ export default function Sidebar({ onSessionSelect, sessions = [] }: SidebarProps
             {(sessions || []).slice(0, 3).map((s, idx) => (
               <ListItemButton 
                 key={idx} 
-                sx={{ borderRadius: 2, pl: 4, py: 0.5, mb: 0.2 }}
+                sx={{ borderRadius: 2, pl: 4, py: 1, mb: 0.2 }}
                 onClick={() => onSessionSelect?.(s.id)}
               >
                 <ListItemText 
                   primary={s.title || "Untitled Session"} 
                   secondary={s.date || ""}
-                  primaryTypographyProps={{ variant: 'caption', fontWeight: 600, noWrap: true }}
-                  secondaryTypographyProps={{ variant: 'caption', fontSize: '10px' }}
+                  primaryTypographyProps={{ variant: 'body2', fontWeight: 600, noWrap: true, sx: { color: '#334155' } }}
+                  secondaryTypographyProps={{ variant: 'caption', sx: { color: '#94a3b8' } }}
                 />
               </ListItemButton>
             ))}
@@ -143,7 +139,7 @@ export default function Sidebar({ onSessionSelect, sessions = [] }: SidebarProps
             >
               <ListItemText 
                 primary="View all history" 
-                primaryTypographyProps={{ variant: 'caption', fontWeight: 700, color: 'primary.main' }} 
+                primaryTypographyProps={{ variant: 'caption', fontWeight: 700, color: '#4f46e5' }} 
               />
             </ListItemButton>
           </List>
@@ -154,52 +150,52 @@ export default function Sidebar({ onSessionSelect, sessions = [] }: SidebarProps
       <Box sx={{ flexGrow: 1 }} />
 
       {/* Bottom section */}
-      <Box sx={{ p: 1, bgcolor: '#f8fafc' }}>
+      <Box sx={{ p: 2, bgcolor: '#f8fafc' }}>
         <List component="div" disablePadding>
-          <ListItemButton sx={{ borderRadius: 1.5, py: 0.5 }}>
-            <ListItemIcon sx={{ minWidth: 32 }}><Gift size={16} color="#475569" /></ListItemIcon>
-            <ListItemText primary="Refer & earn" primaryTypographyProps={{ variant: 'caption', fontWeight: 600 }} />
+          <ListItemButton sx={{ borderRadius: 1.5, py: 1 }}>
+            <ListItemIcon sx={{ minWidth: 32 }}><Gift size={18} color="#64748b" /></ListItemIcon>
+            <ListItemText primary="Refer & earn" primaryTypographyProps={{ variant: 'body2', fontWeight: 600, color: '#475569' }} />
           </ListItemButton>
-          <ListItemButton sx={{ borderRadius: 1.5, py: 0.5 }}>
-            <ListItemIcon sx={{ minWidth: 32 }}><Video size={16} color="#475569" /></ListItemIcon>
-            <ListItemText primary="Tutorials" primaryTypographyProps={{ variant: 'caption', fontWeight: 600 }} />
+          <ListItemButton sx={{ borderRadius: 1.5, py: 1 }}>
+            <ListItemIcon sx={{ minWidth: 32 }}><Video size={18} color="#64748b" /></ListItemIcon>
+            <ListItemText primary="Tutorials" primaryTypographyProps={{ variant: 'body2', fontWeight: 600, color: '#475569' }} />
           </ListItemButton>
-          <ListItemButton sx={{ borderRadius: 1.5, py: 0.5 }}>
-            <ListItemIcon sx={{ minWidth: 32 }}><HelpCircle size={16} color="#475569" /></ListItemIcon>
-            <ListItemText primary="Help" primaryTypographyProps={{ variant: 'caption', fontWeight: 600 }} />
+          <ListItemButton sx={{ borderRadius: 1.5, py: 1 }}>
+            <ListItemIcon sx={{ minWidth: 32 }}><HelpCircle size={18} color="#64748b" /></ListItemIcon>
+            <ListItemText primary="Help" primaryTypographyProps={{ variant: 'body2', fontWeight: 600, color: '#475569' }} />
           </ListItemButton>
         </List>
 
-        <Divider sx={{ my: 1 }} />
+        <Divider sx={{ my: 2 }} />
 
         {/* AI Limit Progress */}
-        <Box sx={{ px: 1, py: 1 }}>
-          <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+        <Box sx={{ px: 1 }}>
+          <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: 'block', mb: 1, letterSpacing: '0.05em' }}>
             AI limit
           </Typography>
           <LinearProgress 
             variant="determinate" 
             value={100} 
             sx={{ 
-              height: 8, 
-              borderRadius: 4, 
+              height: 6, 
+              borderRadius: 3, 
               bgcolor: '#e2e8f0',
-              '& .MuiLinearProgress-bar': { bgcolor: '#4f46e5', borderRadius: 4 }
+              '& .MuiLinearProgress-bar': { bgcolor: '#4f46e5', borderRadius: 3 }
             }} 
           />
-          <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+          <Typography variant="caption" fontWeight={700} color="#64748b" sx={{ display: 'block', mt: 1 }}>
             500/ 500 Remaining
           </Typography>
         </Box>
 
-        {/* Upgrade Button */}
+        {/* Upgrade Button - HIDDEN IN SCREENSHOT but good to keep or remove if not needed */}
         <Button
           fullWidth
           variant="contained"
           startIcon={<Zap size={18} fill="currentColor" />}
           sx={{ 
-            mt: 2, 
-            borderRadius: 3, 
+            mt: 3, 
+            borderRadius: 50, 
             py: 1.2, 
             textTransform: 'none', 
             fontWeight: 700,
