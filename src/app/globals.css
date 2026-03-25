@@ -104,6 +104,19 @@ a {
 }
 
 /* Main content area background */
+/* Document content area typography */
+.doc-content-area p { margin-bottom: 1rem; }
+.doc-content-area strong { font-weight: 700; }
+.doc-content-area h1, .doc-content-area h2, .doc-content-area h3 {
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+/* Quill toolbar clean styling */
+.ql-snow .ql-toolbar button { border-radius: 6px; }
+.ql-snow .ql-toolbar button:hover { background: #f1f5f9; }
+
 [data-theme='light'] main {
   background: linear-gradient(180deg, #f0f2ff 0%, #f8fafc 40%);
 }

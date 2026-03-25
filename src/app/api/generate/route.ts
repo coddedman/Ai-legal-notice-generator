@@ -1,23 +1,65 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { prisma } from '@/lib/prisma';
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: 'English', hi: 'Hindi (हिंदी)', mr: 'Marathi (મરાઠી)',
+  bn: 'Bengali (বাংলা)', ta: 'Tamil (தமிழ்)', te: 'Telugu (తెલોગુ)',
+  gu: 'Gujarati (ગુજરાતી)', kn: 'Kannada (ಕನ್ನಡ)',
+  pa: 'Punjabi (ਪੰਜਾਬী)', ml: 'Malayalam (മലയാളം)',
+};
+
+const CREDIT_COSTS: Record<string, number> = {
+  legalNotice: 5,
+  complaintDraft: 10,
+  whatsappMessage: 1,
+  emailDraft: 2,
+}; // These are now minimum costs, actual cost is token-based
+
+const TOKEN_RATE: Record<string, number> = {
+  'gemini-1.5-pro': 200,   // 1 credit per 200 tokens
+  'flash': 1000,           // 1 credit per 1000 tokens for flash models
+  'default': 500           // 1 credit per 500 tokens default
+};
 
 export async function POST(req: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     const {
       senderName, senderAddress, receiverName, receiverAddress,
       amount, description, senderType, lawyerName, lawyerAddress,
       evidenceText, language = 'en', targetDoc = 'legalNotice',
-      refinement, currentDraft, lawyerLogo, lawyerStamp
+      refinement, currentDraft, lawyerLogo, lawyerStamp,
+      courtName, complaintNumber
     } = body;
 
-    console.log('[BFF] Start Request', { targetDoc, language, isLawyer: senderType === 'lawyer' });
+    if (!description || description.trim().length < 5) {
+      return NextResponse.json({ error: 'Please provide more details about your legal issue.' }, { status: 400 });
+    }
 
-    const LANGUAGE_NAMES: Record<string, string> = {
-      en: 'English', hi: 'Hindi (हिंदी)', mr: 'Marathi (मराठी)',
-      bn: 'Bengali (বাংলা)', ta: 'Tamil (தமிழ்)', te: 'Telugu (తెలుగు)',
-      gu: 'Gujarati (ગુજરાતી)', kn: 'Kannada (ಕನ್ನಡ)',
-      pa: 'Punjabi (ਪੰਜਾਬੀ)', ml: 'Malayalam (മലയാളം)',
-    };
+    // 1. Calculate and Check Credits
+    const cost = CREDIT_COSTS[targetDoc] || 5;
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { credits: true }
+    });
+
+    if (!user || (user.credits || 0) < cost) {
+      return NextResponse.json({ 
+        error: `Insufficient credits. This generation requires ${cost} credits. Your balance: ${user?.credits || 0}`,
+        requiredCredits: cost,
+        currentCredits: user?.credits || 0,
+        outOfCredits: true 
+      }, { status: 403 });
+    }
+
+    console.log('[BFF] Start Request', { targetDoc, language, cost, isLawyer: senderType === 'lawyer' });
+
     const langName = LANGUAGE_NAMES[language] || 'English';
     const langPrefix = `ABSOLUTE REQUIREMENT: Write this ENTIRE document (including headers, greetings, introductory paragraphs, and closing) in ${langName} language. `;
 
@@ -34,11 +76,13 @@ export async function POST(req: NextRequest) {
     const lawyerAddrFormatted = lawyerAddress || '';
 
     const contextBlock = `
-PARTIES (Translate these names/addresses into target language if not English):
-- Sender/Complainant: ${senderName}, ${senderAddrFormatted}
-- Opposite Party: ${receiverName}, ${receiverAddrFormatted}
-- Disputed Amount: Rs. ${amount}
+PARTIES:
+- Sender/Complainant: ${senderName || '[SENDER NAME]'}, ${senderAddrFormatted || '[SENDER ADDRESS]'}
+- Opposite Party: ${receiverName || '[OPPOSITE PARTY NAME]'}, ${receiverAddrFormatted || '[OPPOSITE PARTY ADDRESS]'}
 - Dispute: ${description}
+${courtName ? `- Court: ${courtName}` : ''}
+${complaintNumber ? `- Case/Complaint Reference: ${complaintNumber}` : ''}
+${amount ? `- Disputed Amount: Rs. ${amount}` : ''}
 ${isLawyer ? `- Drafting Advocate: ${lawyerName}, ${lawyerAddrFormatted}` : ''}
 ${evidenceText ? `\nEVIDENCE:\n${evidenceText}` : ''}`;
 
@@ -51,33 +95,47 @@ ${contextBlock}
 
 ${refinement
   ? `REFINE this existing draft based on: "${refinement}"\nEXISTING DRAFT:\n${currentDraft}`
-  : `DRAFT A COMPLETE LEGAL NOTICE.
-  
-STRUCTURE TO FOLLOW:
-[SENDER/ADVOCATE INFO] ${isLawyer ? `Adv. ${lawyerNameClean}` : senderName}
-[SENDER/ADVOCATE ADDRESS] ${isLawyer ? lawyerAddrFormatted : senderAddrFormatted}
+  : `DRAFT A COMPLETE LEGAL NOTICE in the absolute strictly professional and formal layout of an Indian Advocate's Legal Notice.
 
-[DATE LABEL]: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
+Use the following strict structural template (Do NOT use markdown bold/italics, just standard plain text but spaced properly with newlines):
 
-[TO LABEL],
-${receiverName}
-${receiverAddrFormatted}
+REGISTERED A.D. / SPEED POST
 
-[SUBJECT LABEL]: LEGAL NOTICE FOR [RELEVANT BNS OFFENCES BASED ON FACTS]
+Ref. No. ............                                         Date: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
 
-[GREETING (e.g. Dear Sir/Madam)],
+FROM:
+${isLawyer ? `Advocate ${lawyerNameClean}\n${lawyerAddrFormatted}` : `${senderName || '[SENDER NAME]'}\n${senderAddrFormatted || '[SENDER ADDRESS]'}`}
 
-[INTRODUCTORY PARAGRAPH]:
+TO,
+${receiverName || '[RECIPIENT NAME]'},
+${receiverAddrFormatted || '[RECIPIENT ADDRESS]'}
+
+SUBJECT: STATUTORY LEGAL NOTICE UNDER BHARATIYA NYAYA SANHITA 2023 REGARDING [Insert specific context based on facts e.g. RECOVERY OF DUES / BREACH OF CONTRACT].
+
+Sir/Madam,
+
 ${isLawyer
-  ? `Under instructions from and on behalf of my client, ${senderName}, resident of ${senderAddrFormatted}, I, Adv. ${lawyerNameClean}, Advocate, hereby issue this Legal Notice to you as under:`
-  : `I, ${senderName}, resident of ${senderAddrFormatted}, hereby issue this Legal Notice to you as under:`}
+  ? `Under specific instructions from and on behalf of my client, ${senderName || '[SENDER NAME]'}, resident of ${senderAddrFormatted || '[SENDER ADDRESS]'} (hereinafter referred to as "my client"), I address you as follows:`
+  : `I, ${senderName || '[SENDER NAME]'}, resident of ${senderAddrFormatted || '[SENDER ADDRESS]'}, hereby serve upon you the following Legal Notice:`}
 
-[NUMBERED BODY PARAGRAPHS — minimum 6 paragraphs covering: (1) relationship/contract, (2) payment/obligation, (3) breach/default, (4) losses suffered, (5) legal provisions under BNS 2023 with section numbers, (6) demand with 15-day ultimatum]
+1. That [Start the facts chronologically].
+2. That [Detail the transaction/relationship and financial considerations].
+3. That [Detail the breach/offense and specific damages].
+4. That [Detail the repeated attempts to resolve, and your failure to comply].
+5. That the aforesaid acts of omission and commission on your part clearly amount to offenses including but not limited to Criminal Breach of Trust and Cheating, punishable under relevant sections of the Bharatiya Nyaya Sanhita (BNS) 2023 [Include specific sections like 316, 318 if applicable along with how the facts apply].
+6. That my client has suffered tremendous mental agony, harassment, and financial loss due to your illegal, fraudulent and malafide actions for which you are liable to compensate.
 
-[CLOSING GREETING (e.g. Yours faithfully)],
+I therefore, by means of this legal notice, call upon you to [Demand action e.g. clear the outstanding amount / perform specific act] along with Rs. 15,000/- towards the cost of this legal notice, within 15 days from the receipt of this notice. 
 
-[SIGNATURE BLOCK]
-${isLawyer ? `Adv. ${lawyerNameClean}\n(Counsel for ${senderName})` : senderName}`}
+In the event of your failure to comply with this notice within the stipulated period of 15 days, my client has given me clear instructions to initiate appropriate civil and criminal proceedings against you in the competent court of law, entirely at your own risk, cost and consequences.
+
+A copy of this notice is kept in my office for future legal reference.
+
+Yours faithfully,
+
+___________________
+${isLawyer ? `Advocate ${lawyerNameClean}\nCounsel for ${senderName || '[SENDER NAME]'}` : `${senderName || '[SENDER NAME]'}`}
+`}
 
 RULES:
 - Use real BNS 2023 section numbers (e.g., Section 318 for cheating, Section 316 for criminal breach of trust)
@@ -85,8 +143,8 @@ RULES:
 - Write full paragraphs — minimum 6.
 - Be legally precise and authoritative.
 
-OUTPUT: Return ONLY the plain text of the notice. No JSON. No markdown.
-IMPORTANT: DRAFT THE FULL DOCUMENT FROM START TO END. Do NOT truncate. Ensure all 6+ paragraphs are completed including the signature block. Just the document content.`;
+OUTPUT: Return ONLY basic HTML formatted text. Use <p> tags for paragraphs, <br> for line breaks, and <strong> for bolding. Do NOT wrap in \`\`\`html markdown blocks. Output pure HTML markup that is ready to be rendered in a rich text editor.
+IMPORTANT: DRAFT THE FULL DOCUMENT FROM START TO END. Do NOT truncate. Ensure all 6+ paragraphs are completed including the signature block. Just the HTML document content.`;
 
     } else if (targetDoc === 'whatsappMessage') {
       prompt = `${langPrefix}You are drafting a WhatsApp demand message for an Indian consumer.
@@ -94,12 +152,12 @@ ${contextBlock}
 
 ${refinement
   ? `REFINE this existing draft based on: "${refinement}"\nEXISTING:\n${currentDraft}`
-  : `Write a firm, professional WhatsApp message from ${senderName} to ${receiverName}.
+  : `Write a firm, professional WhatsApp message from ${senderName || '[SENDER NAME]'} to ${receiverName || '[RECIPIENT NAME]'}.
   
 STRUCTURE:
 - Opening: State who you are and the issue directly
 - Middle: Key facts (dates, amount paid, what was promised, what happened)
-- Demand: Clear ask — refund Rs. ${amount} within [7 days] or you will file a police complaint + consumer forum case
+- Demand: Clear ask — refund Rs. ${amount || '[AMOUNT]'} within [7 days] or you will file a police complaint + consumer forum case
 - Closing: Your contact or final warning
 
 TONE: Firm, professional, and official. No slang. No emojis. Plain text only.
@@ -109,40 +167,58 @@ OUTPUT: Return ONLY the plain text of the WhatsApp message. No JSON. No markdown
 IMPORTANT: DRAFT THE FULL MESSAGE. Ensure it ends with the signature block. Just the message text.`;
 
     } else if (targetDoc === 'complaintDraft') {
-      prompt = `${langPrefix}You are an Indian legal expert drafting a formal Consumer Forum Complaint under the Consumer Protection Act 2019.
+      prompt = `${langPrefix}You are an Indian legal expert drafting a formal Court Criminal Complaint under the Code of Criminal Procedure, 1973 / BNSS 2023.
 ${contextBlock}
 
 ${refinement
   ? `REFINE this existing draft based on: "${refinement}"\nEXISTING:\n${currentDraft}`
-  : `Draft a complete Consumer Forum complaint.
+  : `Draft a strict, formal Court Criminal Complaint.
 
-STRUCTURE TO FOLLOW:
-[COURT NAME]
-[CASE NUMBER BLOCK]
-[PARTIES BLOCK (Complainant vs Opposite Party)]
-[COMPLAINT TITLE]
-[PRAYER FOR COMPLAINT]
+STRUCTURE TO FOLLOW (Do NOT use markdown bold/italics, just standard plain text but spaced properly with newlines):
 
-BRIEF FACTS:
-[Numbered paragraphs — 1 to 8+ covering: complainant details, opposite party details, service contracted, amount paid, what was promised, what failed, mental agony, previous attempts to resolve]
+IN THE COURT OF THE ${courtName || '[COURT NAME]'}
+CRIMINAL COMPLAINT NO. ${complaintNumber || '[_______]'} OF ${new Date().getFullYear()}
 
-CAUSE OF ACTION:
-[When and how the cause of action arose]
+IN THE MATTER OF:
+
+${senderName || '[COMPLAINANT NAME]'} S/o/D/o/W/o [FATHER/HUSBAND NAME], Aged about [AGE] years, Residing at ${senderAddrFormatted || '[COMPLAINANT ADDRESS]'} ... COMPLAINANT
+
+VERSUS
+
+${receiverName || '[ACCUSED NAME]'} S/o/D/o/W/o [FATHER/HUSBAND NAME], Aged about [AGE] years, Residing at ${receiverAddrFormatted || '[ACCUSED ADDRESS]'} ... ACCUSED
+
+COMPLAINT UNDER SECTION 200 OF THE CODE OF CRIMINAL PROCEDURE, 1973 (OR RELEVANT BNSS 2023 SECTION) FOR OFFENCES PUNISHABLE UNDER RELEVANT SECTIONS OF THE BHARATIYA NYAYA SANHITA (BNS) 2023 / IPC 1860.
+
+MOST RESPECTFULLY SHOWETH:
+
+SYNOPSIS
+That the present complaint is being filed by the Complainant against the Accused for the offence of [Describe offence based on facts e.g. cheating, breach of trust, etc.], wherein the Accused, with a clear fraudulent intention, induced the Complainant to... [Summarize the issue briefly causing wrongful loss].
+
+FACTS OF THE CASE:
+1. That the Complainant is a law-abiding citizen and a resident of ${senderAddrFormatted || '[COMPLAINANT ADDRESS]'}.
+2. That the Accused, ${receiverName || '[ACCUSED NAME]'}, holds himself/herself out as [Describe Accused briefly based on facts].
+3. That [Continue the facts chronologically in numbered paragraphs].
+4. That [Detail the financial consideration, amount paid, dates].
+5. That [Detail the breach or failure to provide service/goods and absconding or refusal behaviour].
+6. That the aforesaid acts of omission and commission clearly amount to serious criminal offenses demonstrating a pre-meditated design to defraud the Complainant, warranting immediate judicial intervention.
 
 PRAYER:
-The complainant therefore most respectfully prays that this Hon'ble Commission may be pleased to:
-(a) Direct the Opposite Party to refund Rs. ${amount}/- with interest;
-(b) Award Rs. [XX,000]/- as compensation for mental agony;
-(c) Award Rs. [XX,000]/- as litigation costs;
-(d) Pass any other order as deemed fit.
+In view of the above facts and circumstances, it is most respectfully prayed that this Hon'ble Court may be pleased to:
+(a) Take cognizance of the offences committed by the Accused under relevant sections of the BNS 2023 / IPC;
+(b) Summon, try and severely punish the Accused in accordance with the law;
+(c) Direct the Accused to pay compensation to the Complainant; and
+(d) Pass any other order(s) as this Hon'ble Court may deem fit and proper in the interest of justice.
 
 PLACE: [City]
-DATE:
-                                        (${senderName})
-                                        COMPLAINANT`}
+DATE: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
 
-OUTPUT: Return ONLY the plain text of the complaint. No JSON. No markdown.
-IMPORTANT: DRAFT THE FULL COMPLAINT including PRAYER clause and SIGNATURE. Do NOT stop halfway. Just the document content.`;
+                                         (${senderName || '[COMPLAINANT NAME]'})
+                                         COMPLAINANT
+                                         
+THROUGH COUNSEL: ___________________`}
+
+OUTPUT: Return ONLY basic HTML formatted text. Use <p> tags for paragraphs, <br> for line breaks, and <strong> for bolding. Do NOT wrap in \`\`\`html markdown blocks. Output pure HTML markup that is ready to be rendered in a rich text editor.
+IMPORTANT: DRAFT THE FULL COMPLAINT including PRAYER clause and SIGNATURE. Do NOT stop halfway. Just the HTML document content.`;
 
     } else if (targetDoc === 'emailDraft') {
       prompt = `${langPrefix}You are drafting a formal Legal Email Notice.
@@ -155,7 +231,7 @@ ${refinement
 STRUCTURE TO FOLLOW:
 Subject: FORMAL NOTICE: [Issue Summary] | WITHOUT PREJUDICE
 
-Dear ${receiverName},
+Dear ${receiverName || '[RECIPIENT NAME]'},
 
 [INTRODUCTORY PARAGRAPH]:
 This email serves as a formal written notice regarding the ongoing dispute.
@@ -167,7 +243,7 @@ This email serves as a formal written notice regarding the ongoing dispute.
 [Warning of further legal action, including consumer court or civil/criminal proceedings]
 
 Sincerely,
-${isLawyer ? `Adv. ${lawyerNameClean}\nCounsel for ${senderName}` : senderName}`}
+${isLawyer ? `Adv. ${lawyerNameClean}\nCounsel for ${senderName || '[SENDER NAME]'}` : (senderName || '[SENDER NAME]')}`}
 
 OUTPUT: Return ONLY the plain text of the email. No JSON. No markdown.
 IMPORTANT: DRAFT THE FULL EMAIL from Subject line to Signature.`;
@@ -178,6 +254,8 @@ IMPORTANT: DRAFT THE FULL EMAIL from Subject line to Signature.`;
     if (!geminiKey && !openRouterKey) throw new Error('No API Key configured.');
 
     let responseText = '';
+    let totalTokens = 0;
+    let modelUsed = '';
 
     if (geminiKey) {
       const geminiModels = [
@@ -208,7 +286,9 @@ IMPORTANT: DRAFT THE FULL EMAIL from Subject line to Signature.`;
             const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
             if (text) {
               responseText = text;
-              console.log(`[BFF] Gemini success: ${model}. Length: ${responseText.length}`);
+              totalTokens = data.usageMetadata?.totalTokenCount || 0;
+              modelUsed = model;
+              console.log(`[BFF] Gemini success: ${model}. Tokens: ${totalTokens}`);
               break;
             }
           } else {
@@ -263,12 +343,54 @@ IMPORTANT: DRAFT THE FULL EMAIL from Subject line to Signature.`;
     };
 
     const finalDraft = clean(responseText);
-    console.log('[BFF] Drafting complete', { length: finalDraft.length });
+    
+    // 2. Calculate Final Credit Cost based on Tokens
+    let rate = TOKEN_RATE['default'];
+    if (modelUsed.includes('pro')) rate = TOKEN_RATE['gemini-1.5-pro'];
+    else if (modelUsed.includes('flash')) rate = TOKEN_RATE['flash'];
+    
+    // Final Cost = Math.max(min_cost, tokens / rate)
+    let calculatedCost = Math.max(cost, Math.ceil(totalTokens / rate));
+    
+    // 2. Deduct Credit and Log Transaction on Success
+    const [updatedUser] = await prisma.$transaction([
+        prisma.user.update({
+            where: { id: session.user.id },
+            data: { credits: { decrement: calculatedCost } }
+        }),
+        prisma.creditTransaction.create({
+            data: {
+                userId: session.user.id,
+                amount: -calculatedCost,
+                type: 'generation',
+                docType: targetDoc,
+                tokens: totalTokens
+            }
+        })
+    ]);
 
-    return NextResponse.json({ [targetDoc]: finalDraft });
+    console.log('[BFF] Drafting complete & token-linked credit deducted', { 
+        userId: session.user.id, 
+        modelUsed, 
+        totalTokens, 
+        calcCost: calculatedCost, 
+        remaining: updatedUser.credits 
+    });
+
+    return NextResponse.json({ 
+        [targetDoc]: finalDraft,
+        remainingCredits: updatedUser.credits,
+        usage: {
+            tokens: totalTokens,
+            cost: calculatedCost
+        }
+    });
 
   } catch (err: any) {
-    console.log('[BFF] Fatal API Error', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('[BFF] Fatal API Error:', err);
+    return NextResponse.json({ 
+        error: err.message || 'Internal Server Error',
+        details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    }, { status: 500 });
   }
 }
