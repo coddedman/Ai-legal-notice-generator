@@ -21,8 +21,21 @@ model User {
   accounts      Account[]
   sessions      Session[]
   notices       Notice[]
+  transactions  CreditTransaction[]
+  credits       Int       @default(500)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+model CreditTransaction {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Int      // Positive for top-ups, negative for usage
+  type      String   // 'generation', 'chat', 'topup'
+  docType   String?
+  tokens    Int?
+  createdAt DateTime @default(now())
 }
 
 model Account {

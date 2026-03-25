@@ -2,14 +2,16 @@
 
 import React from 'react';
 import {
-  Box, Typography, Card, CardContent, Button, Grid, Avatar
+  Box, Typography, Card, CardContent, Button, Grid, Avatar, LinearProgress, Paper
 } from '@mui/material';
 import { useSession } from 'next-auth/react';
 import {
   Sparkles, FileSearch, UploadCloud, Search, FileText,
-  MessageSquare, LayoutGrid, ArrowRight, ShieldCheck, Scale, History
+  MessageSquare, LayoutGrid, ArrowRight, ShieldCheck, Scale, History,
+  TrendingUp, CreditCard, Clock, CheckCircle, Activity
 } from 'lucide-react';
 import Link from 'next/link';
+import { formatDistanceToNow } from 'date-fns';
 
 // Horizontal Style Feature Card
 function ActionCard({ title, desc, icon, path, primary = false }: { title: string, desc: string, icon: React.ReactNode, path: string, primary?: boolean }) {
@@ -102,8 +104,22 @@ function ToolCard({ title, icon, path }: { title: string, icon: React.ReactNode,
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
+  const [stats, setStats] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
 
-  if (status === 'loading') {
+  React.useEffect(() => {
+    if (status === 'authenticated') {
+      fetch('/api/stats')
+        .then(res => res.json())
+        .then(data => {
+            setStats(data);
+            setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    }
+  }, [status]);
+
+  if (status === 'loading' || loading) {
     return (
       <Box p={6} display="flex" justifyContent="center">
          <Typography color="text.secondary" fontWeight={500}>Loading your workspace...</Typography>
@@ -111,11 +127,10 @@ export default function Dashboard() {
     );
   }
 
-  const appName = "AI Legal Desk";
   const firstName = session?.user?.name?.split(' ')[0] || 'Advocate';
 
   return (
-    <Box sx={{ maxWidth: 1100, mx: 'auto', p: { xs: 3, md: 5 }, minHeight: '100vh', pb: 10 }}>
+    <Box sx={{ maxWidth: 1200, mx: 'auto', p: { xs: 3, md: 5 }, minHeight: '100vh', pb: 10 }}>
       
       {/* Top Navigation / Header */}
       <Box sx={{ 
@@ -133,10 +148,10 @@ export default function Dashboard() {
            </Box>
            <Box>
              <Typography variant="h6" fontWeight={800} sx={{ letterSpacing: '-0.02em', lineHeight: 1 }}>
-               {appName}
+               AI Legal Desk
              </Typography>
              <Typography variant="caption" color="text.secondary" fontWeight={500}>
-               Professional Suite
+               Premium Workspace
              </Typography>
            </Box>
         </Box>
@@ -149,7 +164,7 @@ export default function Dashboard() {
             startIcon={<History size={18} />}
             sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'none' }}
           >
-            History
+            Session History
           </Button>
           <Avatar 
             src={session?.user?.image || ''} 
@@ -160,57 +175,100 @@ export default function Dashboard() {
         </Box>
       </Box>
 
+      {/* User Stats Summary */}
+      <Grid container spacing={3} sx={{ mb: 6 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Card sx={{ borderRadius: 4, bgcolor: '#4f46e5', color: 'white', p: 1, height: '100%' }}>
+                <CardContent sx={{ pb: '16px !important' }}>
+                    <Box display="flex" justifyContent="space-between" mb={2}>
+                        <CreditCard size={20} />
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>AI Credits</Typography>
+                    </Box>
+                    <Typography variant="h4" fontWeight={800}>{stats?.credits || 0}</Typography>
+                    <Box sx={{ mt: 2 }}>
+                        <LinearProgress 
+                            variant="determinate" 
+                            value={((stats?.credits || 0) / 500) * 100} 
+                            sx={{ height: 6, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.2)', '& .MuiLinearProgress-bar': { bgcolor: 'white' } }} 
+                        />
+                    </Box>
+                    <Typography variant="caption" sx={{ mt: 1, display: 'block', opacity: 0.8 }}>of 500 remaining</Typography>
+                </CardContent>
+            </Card>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Card sx={{ borderRadius: 4, height: '100%', border: '1px solid', borderColor: 'divider' }}>
+                <CardContent>
+                    <Box display="flex" justifyContent="space-between" mb={2}>
+                        <TrendingUp size={20} color="#10b981" />
+                        <Typography variant="caption" color="text.secondary">Total Drafts</Typography>
+                    </Box>
+                    <Typography variant="h4" fontWeight={800}>{stats?.totalNotices || 0}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>All legal instruments</Typography>
+                </CardContent>
+            </Card>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Card sx={{ borderRadius: 4, height: '100%', border: '1px solid', borderColor: 'divider' }}>
+                <CardContent>
+                    <Box display="flex" justifyContent="space-between" mb={2}>
+                        <CheckCircle size={20} color="#3b82f6" />
+                        <Typography variant="caption" color="text.secondary">Plan Status</Typography>
+                    </Box>
+                    <Typography variant="h4" fontWeight={800}>Free</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>Basic legal automation</Typography>
+                </CardContent>
+            </Card>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Card sx={{ borderRadius: 4, height: '100%', border: '1px solid', borderColor: 'divider' }}>
+                <CardContent>
+                    <Box display="flex" justifyContent="space-between" mb={2}>
+                        <Clock size={20} color="#f59e0b" />
+                        <Typography variant="caption" color="text.secondary">Notice Count</Typography>
+                    </Box>
+                    <Typography variant="h4" fontWeight={800}>{stats?.legalNotices || 0}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>Official notices drafted</Typography>
+                </CardContent>
+            </Card>
+        </Grid>
+      </Grid>
+
       {/* Welcome Section */}
       <Box sx={{ mb: 6 }}>
         <Typography variant="h3" fontWeight={800} sx={{ color: 'text.primary', letterSpacing: '-0.03em', mb: 1 }}>
           Welcome back, {firstName}.
         </Typography>
         <Typography variant="h6" color="text.secondary" fontWeight={400} sx={{ maxWidth: 600 }}>
-          What would you like to build today? Choose a workflow below to get started.
+          Manage your legal drafting history and usage limits here. What would you like to build today?
         </Typography>
       </Box>
 
       {/* Primary Actions (Horizontal Cards) */}
-      <Grid container spacing={3} sx={{ mb: 6 }}>
+      <Grid container spacing={3} sx={{ mb: 8 }}>
         <Grid size={{ xs: 12, md: 6 }}>
           <ActionCard 
             primary
             title="Start New AI Draft" 
-            desc="Generate notices, consumer complaints, plaints, and agreements using advanced legal AI."
+            desc="Generate notices, consumer complaints, and agreements using advanced legal AI."
             icon={<Sparkles size={28} />}
             path="/generate"
           />
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
           <ActionCard 
-            title="Chat with Document (PDF)" 
-            desc="Upload massive case files or judgments to instantly extract dates, clauses, and summaries."
-            icon={<MessageSquare size={28} />}
-            path="/dashboard/chat-pdf"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <ActionCard 
-            title="AI Legal Research" 
-            desc="Search through millions of Indian case laws and acts. Get verified answers without hallucinations."
-            icon={<Search size={28} />}
-            path="/dashboard/research"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <ActionCard 
-            title="Review & Optimize Draft" 
-            desc="Upload an existing word document to improve grammar, formatting, and legal tone securely."
-            icon={<FileSearch size={28} />}
-            path="/dashboard/review"
+            title="Session History" 
+            desc="You have drafted {stats?.totalNotices || 0} documents so far. View your latest work."
+            icon={<History size={28} />}
+            path="/history"
           />
         </Grid>
       </Grid>
 
-      {/* Secondary Tools */}
+      {/* Specialized Tools */}
       <Box>
         <Typography variant="h6" fontWeight={700} mb={3} sx={{ color: 'text.primary' }}>
-          Specialized Tools
+          Specialized Legal Tools
         </Typography>
         <Grid container spacing={2}>
           <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
@@ -229,7 +287,7 @@ export default function Dashboard() {
           </Grid>
           <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
             <ToolCard 
-              title="Upload File" 
+              title="Upload PDF" 
               icon={<UploadCloud size={24} />}
               path="/dashboard/upload"
             />
@@ -241,7 +299,64 @@ export default function Dashboard() {
               path="/dashboard/templates"
             />
           </Grid>
+          <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
+            <ToolCard 
+              title="Research" 
+              icon={<Search size={24} />}
+              path="/dashboard/research"
+            />
+          </Grid>
         </Grid>
+      </Box>
+
+      {/* Recent Activity & Billing */}
+      <Box sx={{ mt: 8 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Typography variant="h6" fontWeight={700} sx={{ color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
+               <Activity size={20} color="#4f46e5" /> Recent Usage
+            </Typography>
+        </Box>
+        
+        <Paper sx={{ borderRadius: 4, border: '1px solid', borderColor: 'divider', overflow: 'hidden', boxShadow: 'none' }}>
+            {(!stats?.transactions || stats.transactions.length === 0) ? (
+                <Box p={4} textAlign="center">
+                    <Typography color="text.secondary">No recent credit activity.</Typography>
+                </Box>
+            ) : (
+                stats.transactions.map((tx: any, idx: number) => (
+                    <Box 
+                        key={tx.id} 
+                        sx={{ 
+                            p: 2, px: 3, 
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            borderBottom: idx === stats.transactions.length - 1 ? 'none' : '1px solid',
+                            borderColor: 'divider',
+                            bgcolor: idx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.01)'
+                        }}
+                    >
+                        <Box>
+                            <Typography variant="subtitle2" fontWeight={600} color="text.primary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                {tx.type === 'chat' ? <MessageSquare size={16} /> : <FileText size={16} />}
+                                {tx.docType === 'legalNotice' ? 'Legal Notice' : tx.docType === 'complaintDraft' ? 'Criminal Complaint' : tx.docType === 'chat-assistant' ? 'AI Co-pilot' : tx.docType}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                {tx.tokens ? `${tx.tokens.toLocaleString()} tokens processed • ` : ''} 
+                                {tx.createdAt ? formatDistanceToNow(new Date(tx.createdAt), { addSuffix: true }) : ''}
+                            </Typography>
+                        </Box>
+                        
+                        <Box sx={{ 
+                            px: 1.5, py: 0.5, borderRadius: 2, 
+                            fontWeight: 700, fontSize: '0.85rem',
+                            color: tx.amount < 0 ? '#ef4444' : '#10b981',
+                            bgcolor: tx.amount < 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'
+                        }}>
+                            {tx.amount > 0 ? '+' : ''}{tx.amount} cr
+                        </Box>
+                    </Box>
+                ))
+            )}
+        </Paper>
       </Box>
 
     </Box>

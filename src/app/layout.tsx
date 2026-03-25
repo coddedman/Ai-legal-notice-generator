@@ -6,36 +6,36 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const APP_URL = 'https://mylegalnotice.in';
-const APP_NAME = 'My Legal Notice India';
+const APP_NAME = 'AI Legal Desk Pro | Advanced Legal Automation for Indian Advocates';
 const APP_DESCRIPTION =
-  'My Legal Notice is India’s leading AI-powered legal notice generator. Draft professional legal notices, WhatsApp demand messages, and consumer complaint drafts in seconds. Compliant with Bharatiya Nyaya Sanhita (BNS) 2023.';
+  'The pinnacle of AI-assisted legal drafting in India. Empower your law firm with automated BNS 2023 compliant legal notices, comprehensive case summaries, and precision criminal complaints. Built exclusively for Indian Advocates and Legal Professionals.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
   title: {
-    default: 'My Legal Notice India — Free AI BNS 2023 Compliant Notices',
-    template: '%s | My Legal Notice India',
+    default: 'AI Legal Desk Pro — Advanced Legal Drafting Software for Advocates',
+    template: '%s | AI Legal Desk Pro',
   },
   description: APP_DESCRIPTION,
   keywords: [
-    'legal notice generator India',
-    'AI legal notice',
-    'free legal notice format',
-    'BNS 2023 legal notice',
-    'Bharatiya Nyaya Sanhita notice',
-    'consumer complaint draft India',
-    'legal notice for cheating',
-    'legal notice for fraud',
-    'legal notice for property dispute',
-    'legal notice for service delay',
-    'advocate legal notice template',
-    'online legal notice India',
-    'legal notice generator Hindi',
-    'demand notice India',
+    'AI legal drafting software India',
+    'AI for lawyers India',
+    'advocate case management tool',
+    'legal tech software for law firms',
+    'BNS 2023 legal notice automation',
+    'Bharatiya Nyaya Sanhita compliance tool',
+    'legal automation for advocates',
+    'consumer complaint draft automation',
+    'law firm productivity software',
+    'AI Legal Desk Pro',
+    'legal drafting AI for Indian lawyers',
+    'online legal research tool India',
+    'automated legal workflow India',
+    'legal tech B2B India'
   ],
-  authors: [{ name: 'AI Legal Notice Generator' }],
-  creator: 'AI Legal Notice Generator',
-  publisher: 'AI Legal Notice Generator',
+  authors: [{ name: 'AI Legal Desk Pro' }],
+  creator: 'AI Legal Desk Pro',
+  publisher: 'AI Legal Desk Pro',
   robots: {
     index: true,
     follow: true,
@@ -51,21 +51,21 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_IN',
     url: APP_URL,
-    siteName: APP_NAME,
-    title: 'My Legal Notice India — Free AI & BNS 2023 Compliant',
+    siteName: 'AI Legal Desk Pro',
+    title: 'AI Legal Desk Pro — The Ultimate AI Co-pilot for Indian Advocates',
     description: APP_DESCRIPTION,
     images: [
       {
         url: '/og-image.png',
         width: 512,
         height: 512,
-        alt: 'AI Legal Notice Generator India — Scales of Justice',
+        alt: 'AI Legal Desk Pro — Advanced Legal Software for Advocates',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'My Legal Notice India — AI Legal Drafting',
+    title: 'AI Legal Desk Pro — Advanced Legal Drafting for Law Firms',
     description: APP_DESCRIPTION,
     images: ['/og-image.png'],
     creator: '@legalnoticeai',
@@ -125,17 +125,17 @@ export default function RootLayout({
                 priceCurrency: 'INR',
               },
               featureList: [
-                'AI-powered legal notice drafting',
-                'BNS 2023 compliant notices',
-                'Consumer complaint drafts',
-                'WhatsApp demand messages',
-                'PDF download with letterhead',
-                'Word document download',
-                'Advocate branding support',
+                'Automated BNS 2023 compliant legal notices',
+                'Precision criminal complaint drafting',
+                'Comprehensive case summary generation',
+                'Professional PDF downloads with Advocate letterheads',
+                'Token-based AI drafting credit system',
+                'Advanced legal research and argument building support',
+                'Multi-language drafting for Indian jurisdictions',
               ],
               inLanguage: 'en-IN',
-              isAccessibleForFree: true,
-              keywords: 'legal notice, India, BNS 2023, AI, advocate, consumer complaint',
+              isAccessibleForFree: false,
+              keywords: 'law firm software India, advocate case management, legal AI, document automation for lawyers, BNS 2023, AI Legal Desk Pro',
             }),
           }}
         />

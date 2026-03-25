@@ -40,7 +40,7 @@ export default function LandingPage() {
           }}>
             <Sparkles size={16} color="#4f46e5" />
             <Typography variant="body2" fontWeight={600} color="#4f46e5">
-              The Next-Gen Legal Workspace
+              The AI Co-Pilot for Indian Advocates
             </Typography>
           </Box>
 
@@ -51,7 +51,7 @@ export default function LandingPage() {
             lineHeight: 1.1,
             fontSize: { xs: '3rem', md: '5rem' }
           }}>
-            Automate Legal Drafting.<br />
+            Automate Drafting.<br />
             <Box component="span" sx={{ 
               background: 'linear-gradient(90deg, #4f46e5, #ec4899)', 
               WebkitBackgroundClip: 'text',
@@ -59,12 +59,12 @@ export default function LandingPage() {
               display: 'inline-block',
               mt: 1
             }}>
-              Accelerate Research.
+              Empower Your Law Firm.
             </Box>
           </Typography>
 
           <Typography variant="h6" color="text.secondary" sx={{ mb: 6, fontWeight: 400, maxWidth: 700, mx: 'auto', lineHeight: 1.6 }}>
-            Empower your practice with India's smartest AI Legal Assistant. Draft precise notices, summarize complex 50-page judgments, and unearth exact case laws in seconds.
+            The pinnacle of AI-assisted legal drafting. Generate flawless BNS 2023 compliant legal notices, comprehensive case summaries, and precision criminal complaints in absolute seconds. Built exclusively for Indian Advocates.
           </Typography>
 
           <Box sx={{ display: 'flex', gap: 3, justifyContent: 'center', flexWrap: 'wrap' }}>

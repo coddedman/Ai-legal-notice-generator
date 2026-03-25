@@ -12,9 +12,22 @@ import { ColorModeContext } from '@/theme/ThemeRegistry';
 import SimpleDraftInput from '@/components/SimpleDraftInput';
 import DraftingWorkspace from '@/components/DraftingWorkspace';
 import { NoticeFormData } from '@/components/NoticeForm';
-import { ShieldCheck, Scale, FileSignature, Sun, Moon, LogIn, UserCircle, LogOut, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { 
+  ShieldCheck, 
+  Scale, 
+  FileSignature, 
+  Sun, 
+  Moon, 
+  LogIn, 
+  UserCircle, 
+  LogOut, 
+  AlertTriangle, 
+  ArrowLeft, 
+  Sparkles 
+} from 'lucide-react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import Link from 'next/link';
+import Sidebar from '@/components/Sidebar';
 
 const LOADING_MESSAGES = [
   'Analyzing dispute and context...',
@@ -59,6 +72,29 @@ export default function GeneratePage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [workspaceMode, setWorkspaceMode] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
+  const [recentNotices, setRecentNotices] = useState<any[]>([]);
+
+  // Fetch recent notices for the sidebar
+  const fetchNotices = useCallback(async () => {
+    if (status !== 'authenticated') return;
+    try {
+        const res = await fetch('/api/history?limit=10');
+        if (res.ok) {
+            const data = await res.json();
+            setRecentNotices(data.notices.map((n: any) => ({
+                id: n.id,
+                title: n.title,
+                content: n.content,
+                formData: n.formData,
+                date: new Date(n.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+            })));
+        }
+    } catch (err) {}
+  }, [status]);
+
+  useEffect(() => {
+    fetchNotices();
+  }, [fetchNotices]);
 
   const handleGenerate = useCallback(async (inputData: { description: string, language: string, useBNS: boolean, evidenceText?: string, targetDoc: string }) => {
     if (status === 'unauthenticated') {
@@ -121,8 +157,12 @@ export default function GeneratePage() {
     }
   }, [status, formData]);
 
-  const handleModify = async (refinement: string) => {
-    setLoading(true);
+  const handleModify = async (refinement: string): Promise<void> => {
+    if (status === 'unauthenticated') {
+      signIn();
+      return;
+    }
+    setLoading(true); // Ensure loading is set for workplace-mode refinements
     try {
       const res = await fetch('/api/generate', {
         method: 'POST',
@@ -134,13 +174,19 @@ export default function GeneratePage() {
           targetDoc: (formData as any).targetDoc || 'legalNotice'
         }),
       });
+
+      if (res.status === 401) {
+        signIn();
+        return;
+      }
+
       if (!res.ok) throw new Error('Failed to refine draft');
       const data = await res.json();
       const finalDraft = data[(formData as any).targetDoc || 'legalNotice'] || Object.values(data)[0];
       setGeneratedContent(finalDraft as string);
-      setSuccessMsg('Draft updated!');
     } catch (err: any) {
       setError(err.message);
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -227,51 +273,102 @@ export default function GeneratePage() {
         </Box>
       </Box>
 
-      {/* Main Content Area */}
-      <Box sx={{ flexGrow: 1, position: 'relative' }}>
-        {loading && !workspaceMode && (
-          <Box sx={{ 
-            position: 'absolute', inset: 0, zIndex: 10, 
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            bgcolor: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(5px)'
-          }}>
-            <CircularProgress thickness={5} size={60} sx={{ mb: 4, color: '#4f46e5' }} />
-            <Typography variant="h5" fontWeight={700} mb={1}>
-              {LOADING_MESSAGES[loadingStep]}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Our AI is drafting your official document based on Indian laws.
-            </Typography>
-          </Box>
+       {/* Main Content Area */}
+      <Box sx={{ flexGrow: 1, position: 'relative', display: 'flex', bgcolor: '#f8fafc' }}>
+        
+        {/* Sidebar Sidebar */}
+        {status === 'authenticated' && (
+            <Sidebar 
+                sessions={recentNotices} 
+                onSessionSelect={(id) => {
+                    const notice = recentNotices.find(n => n.id === id);
+                    if (notice) {
+                        setGeneratedContent(notice.content || '');
+                        if (notice.formData && typeof notice.formData === 'object') {
+                             setFormData(prev => ({ ...prev, ...notice.formData }));
+                        }
+                        setWorkspaceMode(true);
+                    }
+                }} 
+            />
         )}
 
-        {!workspaceMode ? (
-          <Container maxWidth="lg" sx={{ pt: 8, pb: 10 }}>
-             <Box textAlign="center" mb={6}>
-                <Typography variant="h2" fontWeight={900} mb={2} sx={{ letterSpacing: '-0.04em' }}>
-                    AI Legal Drafting Workspace
-                </Typography>
-                <Typography variant="h6" color="text.secondary" fontWeight={400} sx={{ maxWidth: 700, mx: 'auto' }}>
-                    Generate precise legal notices, agreements, and plaints in seconds. 
-                    Simple context, professional results.
-                </Typography>
-             </Box>
-             
-             <SimpleDraftInput onSubmit={handleGenerate} loading={loading} />
-          </Container>
-        ) : (
-          <DraftingWorkspace 
-            initialContent={generatedContent || ''} 
-            loading={loading}
-            formData={formData}
-            updateFormData={(newData) => setFormData(prev => ({ ...prev, ...newData }))}
-            onSave={(content) => {
-              setGeneratedContent(content);
-              setSuccessMsg('Changes saved!');
-            }}
-            onModify={handleModify}
-          />
-        )}
+        {/* The Actionable Content Pane */}
+        <Box sx={{ 
+            flexGrow: 1, 
+            position: 'relative', 
+            overflowY: 'auto',
+            height: 'calc(100vh - 64px)', // Fixed exact header math
+            display: 'flex',
+            flexDirection: 'column',
+            pb: workspaceMode ? 10 : 0 // Add padding so floating action bar doesn't overlap text
+        }}>
+            {loading && !workspaceMode && (
+                <Box sx={{ 
+                    position: 'absolute', inset: 0, zIndex: 10, 
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    bgcolor: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(4px)'
+                }}>
+                    <Box sx={{ position: 'relative', width: 80, height: 80, mb: 4 }}>
+                        <CircularProgress size={80} thickness={2} sx={{ color: '#4f46e5', position: 'absolute' }} />
+                        <Sparkles size={32} color="#4f46e5" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />
+                    </Box>
+                    <Typography variant="h5" fontWeight={700} mb={1} color="text.primary">
+                        {LOADING_MESSAGES[loadingStep] || "Drafting your document..."}
+                    </Typography>
+                </Box>
+            )}
+
+            {!workspaceMode ? (
+                <Container maxWidth="md" sx={{ py: 6 }}>
+                    <Box textAlign="center" mb={6}>
+                        <Typography variant="h3" fontWeight={900} mb={2} sx={{ letterSpacing: '-0.04em', color: '#1e293b' }}>
+                            Legal Drafting Desk
+                        </Typography>
+                        <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 500, mx: 'auto' }}>
+                            Generate precise legal notices and agreements. Professional results in seconds.
+                        </Typography>
+                    </Box>
+                    
+                    <SimpleDraftInput onSubmit={handleGenerate} loading={loading} />
+                </Container>
+            ) : (
+                <DraftingWorkspace 
+                    initialContent={generatedContent || ''} 
+                    loading={loading}
+                    formData={formData}
+                    updateFormData={(newData) => setFormData(prev => ({ ...prev, ...newData }))}
+                    onSave={async (content) => {
+                        if (status === 'unauthenticated') {
+                            signIn();
+                            return;
+                        }
+                        setLoading(true);
+                        try {
+                            const res = await fetch('/api/save-notice', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    content,
+                                    type: (formData as any).targetDoc || 'legalNotice',
+                                    language: formData.language,
+                                    formData: formData,
+                                })
+                            });
+                            if (!res.ok) throw new Error('Failed to save draft');
+                            setGeneratedContent(content);
+                            setSuccessMsg('Changes saved to your history!');
+                            fetchNotices(); // Refresh sidebar after save
+                        } catch (err: any) {
+                            setError(err.message);
+                        } finally {
+                            setLoading(false);
+                        }
+                    }}
+                    onModify={handleModify}
+                />
+            )}
+        </Box>
       </Box>
 
       <Snackbar open={!!error || !!successMsg} autoHideDuration={4000}

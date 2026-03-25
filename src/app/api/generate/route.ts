@@ -1,6 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { prisma } from '@/lib/prisma';
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: 'English', hi: 'Hindi (हिंदी)', mr: 'Marathi (મરાઠી)',
+  bn: 'Bengali (বাংলা)', ta: 'Tamil (தமிழ்)', te: 'Telugu (తెલોગુ)',
+  gu: 'Gujarati (ગુજરાતી)', kn: 'Kannada (ಕನ್ನಡ)',
+  pa: 'Punjabi (ਪੰਜਾਬী)', ml: 'Malayalam (മലയാളം)',
+};
+
+const CREDIT_COSTS: Record<string, number> = {
+  legalNotice: 5,
+  complaintDraft: 10,
+  whatsappMessage: 1,
+  emailDraft: 2,
+}; // These are now minimum costs, actual cost is token-based
+
+const TOKEN_RATE: Record<string, number> = {
+  'gemini-1.5-pro': 200,   // 1 credit per 200 tokens
+  'flash': 1000,           // 1 credit per 1000 tokens for flash models
+  'default': 500           // 1 credit per 500 tokens default
+};
 
 export async function POST(req: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     const {
@@ -11,14 +38,28 @@ export async function POST(req: NextRequest) {
       courtName, complaintNumber
     } = body;
 
-    console.log('[BFF] Start Request', { targetDoc, language, isLawyer: senderType === 'lawyer' });
+    if (!description || description.trim().length < 5) {
+      return NextResponse.json({ error: 'Please provide more details about your legal issue.' }, { status: 400 });
+    }
 
-    const LANGUAGE_NAMES: Record<string, string> = {
-      en: 'English', hi: 'Hindi (हिंदी)', mr: 'Marathi (મરાઠી)',
-      bn: 'Bengali (বাংলা)', ta: 'Tamil (தமிழ்)', te: 'Telugu (తెલોગુ)',
-      gu: 'Gujarati (ગુજરાતી)', kn: 'Kannada (ಕನ್ನಡ)',
-      pa: 'Punjabi (ਪੰਜਾਬੀ)', ml: 'Malayalam (മലയാളം)',
-    };
+    // 1. Calculate and Check Credits
+    const cost = CREDIT_COSTS[targetDoc] || 5;
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { credits: true }
+    });
+
+    if (!user || (user.credits || 0) < cost) {
+      return NextResponse.json({ 
+        error: `Insufficient credits. This generation requires ${cost} credits. Your balance: ${user?.credits || 0}`,
+        requiredCredits: cost,
+        currentCredits: user?.credits || 0,
+        outOfCredits: true 
+      }, { status: 403 });
+    }
+
+    console.log('[BFF] Start Request', { targetDoc, language, cost, isLawyer: senderType === 'lawyer' });
+
     const langName = LANGUAGE_NAMES[language] || 'English';
     const langPrefix = `ABSOLUTE REQUIREMENT: Write this ENTIRE document (including headers, greetings, introductory paragraphs, and closing) in ${langName} language. `;
 
@@ -213,6 +254,8 @@ IMPORTANT: DRAFT THE FULL EMAIL from Subject line to Signature.`;
     if (!geminiKey && !openRouterKey) throw new Error('No API Key configured.');
 
     let responseText = '';
+    let totalTokens = 0;
+    let modelUsed = '';
 
     if (geminiKey) {
       const geminiModels = [
@@ -243,7 +286,9 @@ IMPORTANT: DRAFT THE FULL EMAIL from Subject line to Signature.`;
             const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
             if (text) {
               responseText = text;
-              console.log(`[BFF] Gemini success: ${model}. Length: ${responseText.length}`);
+              totalTokens = data.usageMetadata?.totalTokenCount || 0;
+              modelUsed = model;
+              console.log(`[BFF] Gemini success: ${model}. Tokens: ${totalTokens}`);
               break;
             }
           } else {
@@ -298,12 +343,54 @@ IMPORTANT: DRAFT THE FULL EMAIL from Subject line to Signature.`;
     };
 
     const finalDraft = clean(responseText);
-    console.log('[BFF] Drafting complete', { length: finalDraft.length });
+    
+    // 2. Calculate Final Credit Cost based on Tokens
+    let rate = TOKEN_RATE['default'];
+    if (modelUsed.includes('pro')) rate = TOKEN_RATE['gemini-1.5-pro'];
+    else if (modelUsed.includes('flash')) rate = TOKEN_RATE['flash'];
+    
+    // Final Cost = Math.max(min_cost, tokens / rate)
+    let calculatedCost = Math.max(cost, Math.ceil(totalTokens / rate));
+    
+    // 2. Deduct Credit and Log Transaction on Success
+    const [updatedUser] = await prisma.$transaction([
+        prisma.user.update({
+            where: { id: session.user.id },
+            data: { credits: { decrement: calculatedCost } }
+        }),
+        prisma.creditTransaction.create({
+            data: {
+                userId: session.user.id,
+                amount: -calculatedCost,
+                type: 'generation',
+                docType: targetDoc,
+                tokens: totalTokens
+            }
+        })
+    ]);
 
-    return NextResponse.json({ [targetDoc]: finalDraft });
+    console.log('[BFF] Drafting complete & token-linked credit deducted', { 
+        userId: session.user.id, 
+        modelUsed, 
+        totalTokens, 
+        calcCost: calculatedCost, 
+        remaining: updatedUser.credits 
+    });
+
+    return NextResponse.json({ 
+        [targetDoc]: finalDraft,
+        remainingCredits: updatedUser.credits,
+        usage: {
+            tokens: totalTokens,
+            cost: calculatedCost
+        }
+    });
 
   } catch (err: any) {
-    console.log('[BFF] Fatal API Error', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('[BFF] Fatal API Error:', err);
+    return NextResponse.json({ 
+        error: err.message || 'Internal Server Error',
+        details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    }, { status: 500 });
   }
 }
