@@ -13,25 +13,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   secret: process.env.AUTH_SECRET || "fallback-secret-for-development-only-12345",
   trustHost: true,
-  debug: true,
+  debug: false,
   session: {
     strategy: "jwt",
-  },
-  logger: {
-    error(error) {
-      console.error("🔴 NEXTAUTH CRITICAL ERROR:", error);
-      if (error instanceof Error && error.cause) {
-        console.error("💥 EXACT DB CAUSE:", JSON.stringify(error.cause, null, 2));
-      } else if (error && (error as any).cause) {
-        console.error("💥 EXACT DB CAUSE (raw):", (error as any).cause);
-      }
-    },
-    warn(code) {
-      console.warn("🟠 NEXTAUTH WARNING:", code);
-    },
-    debug(code, metadata) {
-      console.log("🔵 NEXTAUTH DEBUG:", code, metadata);
-    },
   },
   callbacks: {
     jwt: ({ token, user }) => {
