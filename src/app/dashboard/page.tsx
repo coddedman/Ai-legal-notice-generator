@@ -1,167 +1,22 @@
 "use client"
 import React, { useState, useEffect } from 'react';
-import {
-  Box, Typography, Card, CardContent, Button, Grid, Avatar, LinearProgress, Paper
-} from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { Box, Typography, Button, Grid, Avatar, LinearProgress, Paper, Chip } from '@mui/material';
+import { useTheme, alpha } from '@mui/material/styles';
 import { useSession, signOut, signIn } from 'next-auth/react';
 import {
   Sparkles, UploadCloud, Search, FileText,
   MessageSquare, LayoutGrid, ArrowRight, ShieldCheck, Scale, History,
-  TrendingUp, CreditCard, Clock, CheckCircle, Activity, LogOut
+  TrendingUp, CreditCard, Clock, CheckCircle, Activity, LogOut, Zap, Crown, ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import GuestBanner from '@/components/GuestBanner';
 
-// ── Action Card (Horizontal) ─────────────────────────────────────────────
-function ActionCard({ title, desc, icon, path, primary = false }: { title: string; desc: string; icon: React.ReactNode; path: string; primary?: boolean }) {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-  const accent = theme.palette.primary.main;
-
-  return (
-    <Card
-      component={Link} href={path}
-      sx={{
-        borderRadius: '20px', border: '1px solid', textDecoration: 'none',
-        borderColor: primary ? `${accent}30` : 'divider',
-        bgcolor: 'background.paper',
-        boxShadow: primary
-          ? (isDark ? `0 8px 24px ${accent}15` : `0 8px 24px ${accent}10`)
-          : 'none',
-        height: '100%', display: 'flex', alignItems: 'center',
-        p: { xs: 2.5, md: 3 }, position: 'relative', overflow: 'hidden',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        '&::before': primary ? {
-          content: '""', position: 'absolute', top: 0, left: 0, width: '4px', height: '100%',
-          background: isDark
-            ? `linear-gradient(to bottom, ${accent}, ${theme.palette.secondary.main})`
-            : 'linear-gradient(to bottom, #1a237e, #c5a059)',
-        } : {},
-        '&:hover': {
-          borderColor: primary ? accent : `${accent}30`,
-          transform: 'translateY(-4px)',
-          boxShadow: isDark ? `0 16px 40px ${accent}20` : `0 16px 40px ${accent}12`,
-          '& .icon-wrapper': { transform: 'scale(1.05) rotate(-3deg)' },
-          '& .arrow': { transform: 'translateX(4px)', color: accent },
-        },
-      }}
-    >
-      <Box className="icon-wrapper" sx={{
-        width: 60, height: 60, borderRadius: '16px',
-        bgcolor: primary ? (isDark ? accent : '#1a237e') : `${accent}10`,
-        color: primary ? 'white' : accent,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0, mr: 3, transition: 'all 0.3s ease',
-      }}>
-        {icon}
-      </Box>
-      <Box sx={{ flexGrow: 1 }}>
-        <Typography variant="h6" fontWeight={700} sx={{ mb: 0.5, letterSpacing: '-0.01em' }}>{title}</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>{desc}</Typography>
-      </Box>
-      <Box className="arrow" sx={{ color: 'text.disabled', ml: 2, transition: 'all 0.3s ease' }}>
-        <ArrowRight size={22} />
-      </Box>
-    </Card>
-  );
-}
-
-// ── Tool Card (Vertical) ──────────────────────────────────────────────────
-function ToolCard({ title, icon, path }: { title: string; icon: React.ReactNode; path: string }) {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-  const accent = theme.palette.primary.main;
-
-  return (
-    <Card
-      component={Link} href={path}
-      sx={{
-        borderRadius: '20px', border: '1px solid', borderColor: 'divider',
-        bgcolor: 'background.paper',
-        boxShadow: 'none', textDecoration: 'none',
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', textAlign: 'center',
-        p: 3, py: 4, height: '100%',
-        transition: 'all 0.3s ease',
-        '&:hover': {
-          borderColor: `${accent}30`,
-          transform: 'translateY(-4px)',
-          boxShadow: isDark ? `0 12px 24px rgba(0,0,0,0.3)` : `0 12px 24px ${accent}08`,
-          '& .icon': { color: accent, transform: 'translateY(-2px)' },
-        },
-      }}
-    >
-      <Box className="icon" sx={{ color: 'text.secondary', mb: 2, transition: 'all 0.3s ease' }}>
-        {icon}
-      </Box>
-      <Typography variant="subtitle2" fontWeight={700}>{title}</Typography>
-    </Card>
-  );
-}
-
-// ── Stat Card ─────────────────────────────────────────────────────────────
-function StatCard({ icon, label, value, subtext, highlight }: { icon: React.ReactNode; label: string; value: string | number; subtext: string; highlight?: boolean }) {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-
-  if (highlight) {
-    return (
-      <Card sx={{
-        borderRadius: '20px', p: 1, height: '100%', border: 'none',
-        background: isDark
-          ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
-          : 'linear-gradient(135deg, #1a237e 0%, #311b92 100%)',
-        color: 'white',
-        boxShadow: isDark ? `0 12px 24px ${theme.palette.primary.main}30` : '0 12px 24px rgba(26,35,126,0.2)',
-      }}>
-        <CardContent sx={{ pb: '16px !important' }}>
-          <Box display="flex" justifyContent="space-between" mb={2}>
-            {icon}
-            <Typography variant="caption" sx={{ opacity: 0.9, fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              {label}
-            </Typography>
-          </Box>
-          <Typography variant="h3" fontWeight={800} sx={{ letterSpacing: '-0.03em' }}>{value}</Typography>
-          <Box sx={{ mt: 3 }}>
-            <LinearProgress
-              variant="determinate"
-              value={Math.min(100, (Number(value) / 500) * 100)}
-              sx={{ height: 6, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.2)', '& .MuiLinearProgress-bar': { bgcolor: 'white', borderRadius: 3 } }}
-            />
-          </Box>
-          <Typography variant="caption" sx={{ mt: 1.5, display: 'block', opacity: 0.8, fontWeight: 500 }}>{subtext}</Typography>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card sx={{
-      borderRadius: '20px', height: '100%', border: '1px solid', borderColor: 'divider',
-      bgcolor: 'background.paper', boxShadow: 'none',
-    }}>
-      <CardContent sx={{ pb: '16px !important' }}>
-        <Box display="flex" justifyContent="space-between" mb={2}>
-          {icon}
-          <Typography variant="caption" color="text.secondary" fontWeight={600}>{label}</Typography>
-        </Box>
-        <Typography variant="h3" fontWeight={800} sx={{ letterSpacing: '-0.02em' }}>{value}</Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', fontWeight: 500 }}>{subtext}</Typography>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-//  DASHBOARD PAGE
-// ══════════════════════════════════════════════════════════════════════════
 export default function Dashboard() {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const accent = theme.palette.primary.main;
-  const gold = theme.palette.secondary.main;
+  const P = theme.palette.primary.main;
+  const G = theme.palette.secondary.main; // Gold
 
   const { data: session, status } = useSession();
   const [stats, setStats] = useState<any>(null);
@@ -171,8 +26,8 @@ export default function Dashboard() {
   useEffect(() => {
     if (status === 'authenticated') {
       fetch('/api/stats')
-        .then(res => res.json())
-        .then(data => { setStats(data); setLoading(false); })
+        .then(r => r.json())
+        .then(d => { setStats(d); setLoading(false); })
         .catch(() => setLoading(false));
     }
     if (status === 'unauthenticated') setLoading(false);
@@ -180,93 +35,98 @@ export default function Dashboard() {
 
   if (status === 'loading') {
     return (
-      <Box p={6} display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="80vh" gap={2}>
-        <Box sx={{
-          width: 44, height: 44, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1,
-          background: isDark
-            ? `linear-gradient(135deg, ${accent}, ${theme.palette.primary.dark})`
-            : 'linear-gradient(135deg, #1a237e, #311b92)',
-        }}>
-          <Scale size={22} color="white" />
+      <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="70vh" gap={2}>
+        <Box sx={{ width: 48, height: 48, borderRadius: '14px', background: `linear-gradient(135deg, ${P}, ${G})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Scale size={24} color="white" />
         </Box>
-        <Typography color="text.secondary" fontWeight={600}>Loading your workspace…</Typography>
-        <Typography variant="caption" color="text.disabled">Setting up your legal AI desk</Typography>
+        <Typography color="text.secondary" fontWeight={600}>Loading workspace…</Typography>
       </Box>
     );
   }
 
   const firstName = session?.user?.name?.split(' ')[0] || 'Advocate';
+  const credits = stats?.credits ?? 0;
+  const totalDrafts = stats?.totalNotices ?? 0;
+  const notices = stats?.legalNotices ?? 0;
+  const creditsPercent = Math.min(100, (credits / 500) * 100);
+
+  // Shared card style
+  const card = (extra?: object) => ({
+    borderRadius: '20px',
+    border: '1px solid',
+    borderColor: isDark ? alpha('#fff', 0.06) : alpha('#000', 0.06),
+    bgcolor: isDark ? alpha('#fff', 0.02) : 'background.paper',
+    transition: 'all 0.35s cubic-bezier(.4,0,.2,1)',
+    position: 'relative' as const,
+    overflow: 'hidden' as const,
+    ...extra,
+  });
 
   return (
-    <Box sx={{
-      minHeight: '100vh', display: 'flex', flexDirection: 'column',
-      position: 'relative',
-    }}>
-      {/* Background decoration */}
-      <Box sx={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: '40vh',
-        background: isDark
-          ? `linear-gradient(180deg, ${accent}08 0%, transparent 100%)`
-          : 'linear-gradient(180deg, rgba(26,35,126,0.03) 0%, transparent 100%)',
-        pointerEvents: 'none', zIndex: 0,
-      }} />
+    <Box sx={{ minHeight: '100vh', position: 'relative' }}>
+
+      {/* ── Ambient background ────────────────────────────────────── */}
+      <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
+        <Box sx={{
+          position: 'absolute', top: '-8%', right: '-5%',
+          width: { xs: 300, md: 600 }, height: { xs: 300, md: 600 },
+          background: `radial-gradient(circle, ${alpha(P, 0.06)} 0%, transparent 70%)`,
+          borderRadius: '50%',
+        }} />
+        <Box sx={{
+          position: 'absolute', bottom: '10%', left: '-5%',
+          width: { xs: 250, md: 500 }, height: { xs: 250, md: 500 },
+          background: `radial-gradient(circle, ${alpha(G, 0.04)} 0%, transparent 70%)`,
+          borderRadius: '50%',
+        }} />
+      </Box>
 
       {isGuest && <GuestBanner />}
 
-      <Box sx={{ maxWidth: 1200, mx: 'auto', p: { xs: 3, md: 5 }, width: '100%', pb: 10, zIndex: 1, position: 'relative' }}>
+      <Box sx={{ maxWidth: 1200, mx: 'auto', px: { xs: 2, md: 4 }, pt: { xs: 3, md: 4 }, pb: 8, position: 'relative', zIndex: 1 }}>
 
-        {/* ── Header ──────────────────────────────────────────────────── */}
-        <Box sx={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          mb: 7, pb: 3, borderBottom: '1px solid', borderColor: 'divider',
-        }}>
+        {/* ══════════════════════════════════════════════════════════════ */}
+        {/*  HEADER                                                      */}
+        {/* ══════════════════════════════════════════════════════════════ */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 4, md: 5 } }}>
           <Box display="flex" alignItems="center" gap={2}>
             <Box sx={{
-              p: 1, borderRadius: 2, color: 'white',
-              background: isDark
-                ? `linear-gradient(135deg, ${accent}, ${theme.palette.primary.dark})`
-                : 'linear-gradient(135deg, #1a237e, #311b92)',
+              width: 44, height: 44, borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: `linear-gradient(135deg, ${isDark ? P : '#1a237e'} 0%, ${isDark ? theme.palette.primary.dark : '#311b92'} 100%)`,
+              boxShadow: `0 4px 16px ${alpha(P, 0.3)}`,
             }}>
-              <Scale size={24} />
+              <Scale size={22} color="white" />
             </Box>
             <Box>
-              <Typography variant="h6" fontWeight={800} sx={{ letterSpacing: '-0.02em', lineHeight: 1 }}>AI Legal Desk</Typography>
+              <Typography fontWeight={800} sx={{ fontSize: '1.15rem', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+                AI Legal Desk
+              </Typography>
               <Typography variant="caption" color="text.secondary" fontWeight={500}>
-                {isGuest ? 'Explore our legal tools' : 'Premium Workspace'}
+                {isGuest ? 'Guest workspace' : 'Premium workspace'}
               </Typography>
             </Box>
           </Box>
-
           <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
             {isGuest ? (
               <>
-                <Button component={Link} href="/" variant="text"
-                  sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'none' }}>Home</Button>
-                <Button variant="contained" onClick={() => signIn()}
-                  sx={{
-                    fontWeight: 700, textTransform: 'none', borderRadius: '10px',
-                    background: isDark ? `linear-gradient(135deg, ${accent}, ${theme.palette.primary.dark})` : 'linear-gradient(135deg, #1a237e, #311b92)',
-                    boxShadow: 'none', '&:hover': { opacity: 0.9 },
-                  }}>
+                <Button component={Link} href="/" variant="text" size="small"
+                  sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'none', display: { xs: 'none', md: 'inline-flex' } }}>Home</Button>
+                <Button variant="contained" onClick={() => signIn()} size="small"
+                  sx={{ fontWeight: 700, textTransform: 'none', borderRadius: '10px', boxShadow: 'none' }}>
                   Sign In Free
                 </Button>
               </>
             ) : (
               <>
-                <Button component={Link} href="/history" variant="text" startIcon={<History size={18} />}
-                  sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'none' }}>Session History</Button>
-                <Button variant="outlined" startIcon={<LogOut size={16} />}
+                <Button component={Link} href="/history" variant="text" size="small" startIcon={<History size={16} />}
+                  sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'none', display: { xs: 'none', md: 'inline-flex' } }}>History</Button>
+                <Button variant="outlined" size="small" startIcon={<LogOut size={14} />}
                   onClick={() => signOut({ callbackUrl: '/' })}
-                  sx={{
-                    fontWeight: 600, textTransform: 'none', fontSize: '0.85rem',
-                    color: 'text.secondary', borderColor: 'divider', borderRadius: '10px',
-                    '&:hover': { bgcolor: 'error.main', borderColor: 'error.main', color: 'white' },
-                  }}>
+                  sx={{ fontWeight: 600, textTransform: 'none', borderRadius: '10px', color: 'text.secondary', borderColor: 'divider',
+                    '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.08), borderColor: theme.palette.error.main, color: 'error.main' } }}>
                   Sign Out
                 </Button>
-                <Avatar src={session?.user?.image || ''} sx={{
-                  width: 40, height: 40, border: '2px solid', borderColor: 'divider',
-                }}>
+                <Avatar src={session?.user?.image || ''} sx={{ width: 38, height: 38, border: '2px solid', borderColor: 'divider', ml: 0.5 }}>
                   {firstName.charAt(0)}
                 </Avatar>
               </>
@@ -274,108 +134,286 @@ export default function Dashboard() {
           </Box>
         </Box>
 
-        {/* ── Stats (authenticated) ───────────────────────────────────── */}
+        {/* ══════════════════════════════════════════════════════════════ */}
+        {/*  WELCOME + HERO CTA                                          */}
+        {/* ══════════════════════════════════════════════════════════════ */}
+        <Box sx={{
+          ...card({
+            p: { xs: 4, md: 6 }, mb: 4,
+            background: isDark
+              ? `linear-gradient(135deg, ${alpha(P, 0.12)} 0%, ${alpha(G, 0.06)} 100%)`
+              : `linear-gradient(135deg, #1a237e 0%, #283593 60%, ${alpha(G, 0.4)} 100%)`,
+            border: isDark ? `1px solid ${alpha(P, 0.15)}` : 'none',
+            boxShadow: isDark ? `0 8px 32px ${alpha(P, 0.15)}` : '0 12px 40px rgba(26,35,126,0.25)',
+          }),
+        }}>
+          {/* Decorative accent */}
+          <Box sx={{ position: 'absolute', top: -30, right: -30, width: 160, height: 160, borderRadius: '50%', background: `radial-gradient(circle, ${alpha(G, isDark ? 0.15 : 0.2)} 0%, transparent 70%)` }} />
+          <Box sx={{ position: 'absolute', bottom: -20, left: '30%', width: 200, height: 200, borderRadius: '50%', background: `radial-gradient(circle, ${alpha(P, 0.1)} 0%, transparent 70%)` }} />
+
+          <Box sx={{ position: 'relative', zIndex: 1 }}>
+            {!isGuest && (
+              <Chip
+                icon={<Crown size={13} />}
+                label="Free Tier · 500 credits"
+                size="small"
+                sx={{
+                  mb: 2.5, fontWeight: 600, fontSize: '0.72rem',
+                  bgcolor: isDark ? alpha(G, 0.15) : 'rgba(255,255,255,0.18)',
+                  color: isDark ? G : 'rgba(255,255,255,0.9)',
+                  border: `1px solid ${isDark ? alpha(G, 0.25) : 'rgba(255,255,255,0.2)'}`,
+                  '& .MuiChip-icon': { color: isDark ? G : 'rgba(255,255,255,0.9)' },
+                }}
+              />
+            )}
+            <Typography variant="h3" fontWeight={900} sx={{
+              color: isDark ? 'text.primary' : 'white',
+              letterSpacing: '-0.03em', lineHeight: 1.15, mb: 1.5,
+              fontSize: { xs: '1.8rem', md: '2.5rem' },
+            }}>
+              {isGuest ? 'Explore Legal AI Tools' : `Welcome back, ${firstName}`}
+            </Typography>
+            <Typography sx={{
+              color: isDark ? 'text.secondary' : 'rgba(255,255,255,0.7)',
+              maxWidth: 520, lineHeight: 1.7, fontSize: '0.95rem', mb: 3.5,
+            }}>
+              {isGuest
+                ? 'Try any tool below for free. Sign in to save your work and track your drafting history.'
+                : 'Your AI-powered legal workspace is ready. Start a new draft or continue where you left off.'}
+            </Typography>
+            <Link href="/generate" style={{ textDecoration: 'none' }}>
+              <Button variant="contained" size="large" endIcon={<Sparkles size={18} />}
+                sx={{
+                  px: 4, py: 1.5, borderRadius: '12px', fontSize: '0.95rem', fontWeight: 700, textTransform: 'none',
+                  background: isDark ? `linear-gradient(135deg, ${P}, ${theme.palette.primary.dark})` : 'white',
+                  color: isDark ? 'white' : '#1a237e',
+                  boxShadow: isDark ? `0 4px 20px ${alpha(P, 0.4)}` : '0 4px 20px rgba(0,0,0,0.15)',
+                  '&:hover': { transform: 'translateY(-2px)', boxShadow: isDark ? `0 8px 28px ${alpha(P, 0.5)}` : '0 8px 28px rgba(0,0,0,0.2)' },
+                  transition: 'all 0.25s',
+                }}>
+                Start New AI Draft
+              </Button>
+            </Link>
+          </Box>
+        </Box>
+
+        {/* ══════════════════════════════════════════════════════════════ */}
+        {/*  STATS BENTO GRID (authenticated)                            */}
+        {/* ══════════════════════════════════════════════════════════════ */}
         {!isGuest && (
-          <Grid container spacing={3} sx={{ mb: 7 }}>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <StatCard highlight icon={<CreditCard size={22} style={{ opacity: 0.9 }} />} label="Available Credits" value={stats?.credits || 0} subtext="of 500 remaining" />
+          <Grid container spacing={2} sx={{ mb: 4 }}>
+            {/* Credits — wide card */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box sx={{
+                ...card({ p: 3.5 }),
+                display: 'flex', alignItems: 'center', gap: 3,
+                '&:hover': { borderColor: alpha(P, 0.2), boxShadow: `0 8px 24px ${alpha(P, 0.08)}` },
+              }}>
+                <Box sx={{
+                  width: 56, height: 56, borderRadius: '16px', flexShrink: 0,
+                  background: `linear-gradient(135deg, ${P} 0%, ${theme.palette.primary.dark || P} 100%)`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: `0 4px 16px ${alpha(P, 0.3)}`,
+                }}>
+                  <CreditCard size={24} color="white" />
+                </Box>
+                <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="baseline" mb={0.5}>
+                    <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ letterSpacing: '0.04em', textTransform: 'uppercase' }}>Credits Available</Typography>
+                    <Typography variant="caption" color="text.disabled">{credits}/500</Typography>
+                  </Box>
+                  <Typography variant="h4" fontWeight={900} sx={{ letterSpacing: '-0.03em', lineHeight: 1, mb: 1.5 }}>{credits}</Typography>
+                  <LinearProgress variant="determinate" value={creditsPercent}
+                    sx={{
+                      height: 8, borderRadius: 4,
+                      bgcolor: isDark ? alpha('#fff', 0.06) : alpha('#000', 0.04),
+                      '& .MuiLinearProgress-bar': {
+                        borderRadius: 4,
+                        background: `linear-gradient(90deg, ${P}, ${G})`,
+                      },
+                    }}
+                  />
+                </Box>
+              </Box>
             </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <StatCard icon={<TrendingUp size={22} color={theme.palette.success.main} />} label="Total Drafts" value={stats?.totalNotices || 0} subtext="All legal instruments created" />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <StatCard icon={<CheckCircle size={22} color={accent} />} label="Plan Status" value="Free Tier" subtext="Basic legal automation" />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <StatCard icon={<Clock size={22} color={gold} />} label="Notice Count" value={stats?.legalNotices || 0} subtext="Official notices drafted" />
-            </Grid>
+
+            {/* 3 small stat cards */}
+            {[
+              { icon: <TrendingUp size={20} />, label: 'Total Drafts', value: totalDrafts, color: theme.palette.success.main },
+              { icon: <FileText size={20} />, label: 'Legal Notices', value: notices, color: G },
+              { icon: <CheckCircle size={20} />, label: 'Plan', value: 'Free', color: P },
+            ].map((s) => (
+              <Grid key={s.label} size={{ xs: 4, md: 2 }}>
+                <Box sx={{
+                  ...card({ p: 2.5, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }),
+                  '&:hover': { borderColor: alpha(s.color, 0.3), transform: 'translateY(-2px)' },
+                }}>
+                  <Box sx={{ color: s.color, mb: 1 }}>{s.icon}</Box>
+                  <Typography fontWeight={900} sx={{ fontSize: '1.5rem', letterSpacing: '-0.03em', lineHeight: 1, mb: 0.5 }}>{s.value}</Typography>
+                  <Typography variant="caption" color="text.secondary" fontWeight={500}>{s.label}</Typography>
+                </Box>
+              </Grid>
+            ))}
           </Grid>
         )}
 
-        {/* ── Welcome ─────────────────────────────────────────────────── */}
-        <Box sx={{ mb: 6, mt: !isGuest ? 0 : 2 }}>
-          <Typography variant="h3" fontWeight={800} sx={{ letterSpacing: '-0.03em', mb: 1 }}>
-            {isGuest ? 'Explore Legal AI Tools' : `Welcome back, ${firstName}.`}
-          </Typography>
-          <Typography variant="h6" color="text.secondary" fontWeight={500} sx={{ maxWidth: 600 }}>
-            {isGuest
-              ? 'Try any tool below — sign in free to save your work and access your full drafting history.'
-              : 'Manage your legal drafting history and usage limits here. What would you like to build today?'
-            }
-          </Typography>
-        </Box>
+        {/* ══════════════════════════════════════════════════════════════ */}
+        {/*  TOOLS — BENTO LAYOUT                                        */}
+        {/* ══════════════════════════════════════════════════════════════ */}
+        <Typography fontWeight={800} sx={{ fontSize: '1.1rem', letterSpacing: '-0.01em', mb: 2.5, mt: 2 }}>
+          Legal Tools
+        </Typography>
 
-        {/* ── Primary Actions ─────────────────────────────────────────── */}
-        <Grid container spacing={3} sx={{ mb: 8 }}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <ActionCard
-              primary
-              title="Start New AI Draft"
-              desc="Generate notices, consumer complaints, and agreements using advanced legal AI."
-              icon={<Sparkles size={28} />}
-              path="/generate"
-            />
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <ActionCard
-              title={isGuest ? 'Browse Templates' : 'Session History'}
-              desc={isGuest ? 'Pick from 9+ pre-built templates for common Indian legal notices.' : `You have drafted ${stats?.totalNotices || 0} documents so far. View your latest work.`}
-              icon={isGuest ? <LayoutGrid size={28} /> : <History size={28} />}
-              path={isGuest ? '/dashboard/templates' : '/history'}
-            />
-          </Grid>
+        <Grid container spacing={2} sx={{ mb: 4 }}>
+          {[
+            { title: 'AI Draft Generator', desc: 'Generate BNS 2023-compliant notices, complaints & agreements', icon: <Sparkles size={24} />, path: '/generate', featured: true, color: P },
+            { title: 'Legal Memo', desc: 'Build structured legal memorandums', icon: <FileText size={24} />, path: '/dashboard/memo', color: '#0284c7' },
+            { title: 'Build Arguments', desc: 'AI-assisted legal argument builder', icon: <ShieldCheck size={24} />, path: '/dashboard/arguments', color: G },
+            { title: 'Upload PDF', desc: 'Extract clauses from any legal PDF', icon: <UploadCloud size={24} />, path: '/dashboard/upload', color: '#059669' },
+            { title: 'Templates', desc: '9+ ready-to-use Indian legal templates', icon: <LayoutGrid size={24} />, path: '/dashboard/templates', color: '#d97706' },
+            { title: 'Legal Research', desc: 'AI search across Indian case law', icon: <Search size={24} />, path: '/dashboard/research', color: '#7c3aed' },
+          ].map((tool) => (
+            <Grid key={tool.title} size={{ xs: 12, sm: 6, md: tool.featured ? 6 : 3 }}>
+              <Box
+                component={Link} href={tool.path}
+                sx={{
+                  ...card({
+                    p: tool.featured ? 3.5 : 3,
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: tool.featured ? 'row' : 'column',
+                    alignItems: tool.featured ? 'center' : 'flex-start',
+                    gap: tool.featured ? 3 : 0,
+                    textDecoration: 'none',
+                    color: 'inherit',
+                  }),
+                  '&:hover': {
+                    borderColor: alpha(tool.color, 0.3),
+                    transform: 'translateY(-4px)',
+                    boxShadow: `0 12px 28px ${alpha(tool.color, isDark ? 0.15 : 0.1)}`,
+                    '& .tool-icon': { transform: 'scale(1.1) rotate(-5deg)', boxShadow: `0 6px 20px ${alpha(tool.color, 0.3)}` },
+                    '& .tool-arrow': { opacity: 1, transform: 'translateX(0)' },
+                  },
+                }}
+              >
+                <Box className="tool-icon" sx={{
+                  width: tool.featured ? 60 : 48, height: tool.featured ? 60 : 48,
+                  borderRadius: tool.featured ? '18px' : '14px', flexShrink: 0,
+                  bgcolor: alpha(tool.color, isDark ? 0.15 : 0.08),
+                  border: `1px solid ${alpha(tool.color, 0.12)}`,
+                  color: tool.color,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  mb: tool.featured ? 0 : 2,
+                  transition: 'all 0.3s ease',
+                }}>
+                  {tool.icon}
+                </Box>
+                <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                  <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Typography fontWeight={700} sx={{ fontSize: tool.featured ? '1.05rem' : '0.9rem', letterSpacing: '-0.01em', mb: 0.5 }}>
+                      {tool.title}
+                    </Typography>
+                    <Box className="tool-arrow" sx={{ opacity: 0, transform: 'translateX(-6px)', transition: 'all 0.3s ease', color: 'text.disabled' }}>
+                      <ChevronRight size={18} />
+                    </Box>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, fontSize: '0.82rem' }}>
+                    {tool.desc}
+                  </Typography>
+                </Box>
+                {tool.featured && (
+                  <Chip label="Popular" size="small" sx={{
+                    bgcolor: alpha(tool.color, 0.1), color: tool.color,
+                    fontWeight: 700, fontSize: '0.68rem', height: 22,
+                    border: `1px solid ${alpha(tool.color, 0.15)}`,
+                  }} />
+                )}
+              </Box>
+            </Grid>
+          ))}
         </Grid>
 
-        {/* ── Specialized Tools ────────────────────────────────────────── */}
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="h6" fontWeight={800} mb={3} sx={{ letterSpacing: '-0.01em' }}>Specialized Legal Tools</Typography>
-          <Grid container spacing={2.5}>
-            <Grid size={{ xs: 6, sm: 4, md: 2.4 }}><ToolCard title="Legal Memo" icon={<FileText size={28} />} path="/dashboard/memo" /></Grid>
-            <Grid size={{ xs: 6, sm: 4, md: 2.4 }}><ToolCard title="Build Arguments" icon={<ShieldCheck size={28} />} path="/dashboard/arguments" /></Grid>
-            <Grid size={{ xs: 6, sm: 4, md: 2.4 }}><ToolCard title="Upload PDF" icon={<UploadCloud size={28} />} path="/dashboard/upload" /></Grid>
-            <Grid size={{ xs: 6, sm: 4, md: 2.4 }}><ToolCard title="Templates" icon={<LayoutGrid size={28} />} path="/dashboard/templates" /></Grid>
-            <Grid size={{ xs: 6, sm: 4, md: 2.4 }}><ToolCard title="Research" icon={<Search size={28} />} path="/dashboard/research" /></Grid>
-          </Grid>
-        </Box>
-
-        {/* ── Recent Activity (authenticated) ──────────────────────────── */}
+        {/* ══════════════════════════════════════════════════════════════ */}
+        {/*  QUICK ACTIONS ROW                                           */}
+        {/* ══════════════════════════════════════════════════════════════ */}
         {!isGuest && (
-          <Box sx={{ mt: 8 }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-              <Typography variant="h6" fontWeight={700} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Activity size={20} color={accent} /> Recent Usage
+          <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap' }}>
+            {[
+              { label: 'Session History', icon: <History size={16} />, path: '/history' },
+              { label: 'Browse Templates', icon: <LayoutGrid size={16} />, path: '/dashboard/templates' },
+            ].map((q) => (
+              <Button key={q.label} component={Link} href={q.path} variant="outlined" size="small" startIcon={q.icon}
+                sx={{
+                  borderRadius: '10px', textTransform: 'none', fontWeight: 600, fontSize: '0.82rem',
+                  borderColor: 'divider', color: 'text.secondary',
+                  '&:hover': { borderColor: P, color: P, bgcolor: alpha(P, 0.04) },
+                }}>
+                {q.label}
+              </Button>
+            ))}
+          </Box>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════ */}
+        {/*  RECENT ACTIVITY                                             */}
+        {/* ══════════════════════════════════════════════════════════════ */}
+        {!isGuest && (
+          <Box>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5}>
+              <Typography fontWeight={800} sx={{ fontSize: '1.1rem', letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Activity size={18} color={P} /> Recent Activity
               </Typography>
             </Box>
-            <Paper sx={{ borderRadius: '16px', border: '1px solid', borderColor: 'divider', overflow: 'hidden', boxShadow: 'none' }}>
+            <Paper sx={{
+              borderRadius: '16px', border: '1px solid', borderColor: 'divider',
+              bgcolor: isDark ? alpha('#fff', 0.02) : 'background.paper',
+              overflow: 'hidden', boxShadow: 'none',
+            }}>
               {(!stats?.transactions || stats.transactions.length === 0) ? (
-                <Box p={4} textAlign="center">
-                  <Typography color="text.secondary">No recent credit activity.</Typography>
+                <Box p={5} textAlign="center">
+                  <Box sx={{ width: 48, height: 48, borderRadius: '14px', bgcolor: alpha(P, 0.06), display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2 }}>
+                    <Clock size={22} color={P} />
+                  </Box>
+                  <Typography color="text.secondary" fontWeight={600}>No recent activity</Typography>
+                  <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 0.5 }}>Start a draft to see your usage here</Typography>
                 </Box>
               ) : (
                 stats.transactions.map((tx: any, idx: number) => (
                   <Box key={tx.id} sx={{
-                    p: 2, px: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    borderBottom: idx === stats.transactions.length - 1 ? 'none' : '1px solid',
-                    borderColor: 'divider',
-                    bgcolor: idx % 2 === 0 ? 'transparent' : (isDark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)'),
+                    p: 2.5, px: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    borderBottom: idx === stats.transactions.length - 1 ? 'none' : '1px solid', borderColor: 'divider',
+                    transition: 'background 0.15s',
+                    '&:hover': { bgcolor: isDark ? alpha('#fff', 0.02) : alpha('#000', 0.01) },
                   }}>
-                    <Box>
-                      <Typography variant="subtitle2" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Box sx={{
+                        width: 36, height: 36, borderRadius: '10px',
+                        bgcolor: tx.type === 'chat' ? alpha('#7c3aed', 0.08) : alpha(P, 0.08),
+                        color: tx.type === 'chat' ? '#7c3aed' : P,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      }}>
                         {tx.type === 'chat' ? <MessageSquare size={16} /> : <FileText size={16} />}
-                        {tx.docType === 'legalNotice' ? 'Legal Notice' : tx.docType === 'complaintDraft' ? 'Criminal Complaint' : tx.docType === 'chat-assistant' ? 'AI Co-pilot' : tx.docType}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                        {tx.tokens ? `${tx.tokens.toLocaleString()} tokens processed • ` : ''}
-                        {tx.createdAt ? formatDistanceToNow(new Date(tx.createdAt), { addSuffix: true }) : ''}
-                      </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight={600}>
+                          {tx.docType === 'legalNotice' ? 'Legal Notice' : tx.docType === 'complaintDraft' ? 'Criminal Complaint' : tx.docType === 'chat-assistant' ? 'AI Co-pilot' : tx.docType}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {tx.tokens ? `${tx.tokens.toLocaleString()} tokens · ` : ''}
+                          {tx.createdAt ? formatDistanceToNow(new Date(tx.createdAt), { addSuffix: true }) : ''}
+                        </Typography>
+                      </Box>
                     </Box>
-                    <Box sx={{
-                      px: 1.5, py: 0.5, borderRadius: 2, fontWeight: 700, fontSize: '0.85rem',
-                      color: tx.amount < 0 ? 'error.main' : 'success.main',
-                      bgcolor: tx.amount < 0 ? (isDark ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.08)') : (isDark ? 'rgba(16,185,129,0.15)' : 'rgba(16,185,129,0.08)'),
-                    }}>
-                      {tx.amount > 0 ? '+' : ''}{tx.amount} cr
-                    </Box>
+                    <Chip
+                      label={`${tx.amount > 0 ? '+' : ''}${tx.amount} cr`}
+                      size="small"
+                      sx={{
+                        fontWeight: 700, fontSize: '0.78rem', height: 26,
+                        color: tx.amount < 0 ? 'error.main' : 'success.main',
+                        bgcolor: tx.amount < 0 ? alpha(theme.palette.error.main, 0.08) : alpha(theme.palette.success.main, 0.08),
+                        border: `1px solid ${tx.amount < 0 ? alpha(theme.palette.error.main, 0.15) : alpha(theme.palette.success.main, 0.15)}`,
+                      }}
+                    />
                   </Box>
                 ))
               )}
