@@ -17,6 +17,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: "jwt",
   },
+  logger: {
+    error(error) {
+      console.error("🔴 NEXTAUTH CRITICAL ERROR:", error);
+    },
+    warn(code) {
+      console.warn("🟠 NEXTAUTH WARNING:", code);
+    },
+    debug(code, metadata) {
+      console.log("🔵 NEXTAUTH DEBUG:", code, metadata);
+    },
+  },
   callbacks: {
     jwt: ({ token, user }) => {
       if (user) {
