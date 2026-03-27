@@ -5,7 +5,7 @@ import LandingNavAuth from '@/components/LandingNavAuth';
 
 export const metadata: Metadata = {
   title: 'My Legal Notice | #1 Accurate Legal AI for Indian Lawyers',
-  description: 'Draft any legal document expertly in minutes with AI. BNS 2023 compliant legal notices, court complaints & agreements. Try free — no credit card required.',
+  description: 'Draft legal notices, build arguments, create memos, research case law & extract clauses from PDFs — all powered by BNS 2023-compliant AI. Try free today.',
   keywords: ['legal notice generator', 'AI legal drafting', 'BNS 2023', 'Indian lawyer AI', 'legal document automation', 'court complaint generator', 'advocate AI tool'],
   openGraph: {
     title: 'My Legal Notice | #1 Accurate Legal AI for Indian Lawyers',
@@ -184,21 +184,20 @@ export default function Page() {
               fontSize: { xs: '2.6rem', sm: '3.5rem', md: '5rem' },
               lineHeight: 1.08, letterSpacing: '-0.04em', mb: 4,
             }}>
-              Draft Legal Notices<br />
+              Your Complete Legal AI<br />
               <Box component="span" sx={{
                 background: 'linear-gradient(90deg, #1a237e 0%, #c5a059 100%)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
               }}>
-                10× Faster with AI
+                Toolkit for Advocates
               </Box>
             </Typography>
 
             <Typography component="p" sx={{
               fontSize: { xs: '1.05rem', md: '1.2rem' }, color: 'text.secondary',
-              maxWidth: 580, mx: 'auto', lineHeight: 1.8, mb: 6,
+              maxWidth: 600, mx: 'auto', lineHeight: 1.8, mb: 6,
             }}>
-              Generate BNS 2023-compliant legal notices, court complaints &amp; agreements in seconds.
-              No templates. Just describe your case.
+              Draft legal notices, build arguments, create memos, research case law &amp; extract clauses from PDFs — all powered by BNS 2023-compliant AI.
             </Typography>
 
             {/* CTAs */}
@@ -213,7 +212,7 @@ export default function Page() {
                     '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 16px 40px rgba(26,35,126,0.35)' },
                     transition: 'all 0.25s',
                   }}>
-                  Start Drafting — It&apos;s Free →
+                  Explore Tools — It&apos;s Free →
                 </Button>
               </Link>
               <Link href="/dashboard/templates" style={{ textDecoration: 'none' }}>
@@ -433,7 +432,7 @@ export default function Page() {
                       '&:hover': { background: '#f0f4ff', transform: 'translateY(-2px)', boxShadow: '0 16px 40px rgba(0,0,0,0.4)' },
                       transition: 'all 0.25s',
                     }}>
-                    Start Drafting Free →
+                    Get Started Free →
                   </Button>
                 </Link>
                 <Typography sx={{ mt: 3, fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
