@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Box, Typography, Button, TextField, CircularProgress, Paper, Divider, Snackbar, Alert } from '@mui/material';
 import { UploadCloud, Sparkles, ArrowLeft, Copy, Check } from 'lucide-react';
 import Link from 'next/link';

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import {
   TextField,
@@ -133,7 +133,7 @@ export default function NoticeForm({ onSubmit, loading, initialData }: Props) {
     mode: 'onTouched'
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialData) reset(initialData);
   }, [initialData, reset]);
 

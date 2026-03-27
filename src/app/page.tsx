@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react';
+
 import { Box, Typography, Button, Container, Grid, Chip } from '@mui/material';
 import { ArrowRight, Sparkles, Scale, BookOpen, Clock, Shield, FileText, Search } from 'lucide-react';
 import Link from 'next/link';
@@ -82,7 +82,7 @@ export default function LandingPage() {
               </Button>
               <Button
                 component={Link}
-                href="/generate"
+                href="/dashboard"
                 variant="contained"
                 size="small"
                 sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 700, bgcolor: '#4f46e5', '&:hover': { bgcolor: '#4338ca' }, boxShadow: 'none' }}

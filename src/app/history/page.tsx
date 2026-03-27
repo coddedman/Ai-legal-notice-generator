@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Box, Typography, Paper, Button, Chip, CircularProgress,
   TextField, InputAdornment, IconButton, Tooltip, Divider,

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, Typography, TextField, Button, Paper,
   FormControl, Select, MenuItem, Checkbox, FormControlLabel,
@@ -21,7 +21,7 @@ export default function SimpleDraftInput({ onSubmit, loading }: SimpleDraftInput
   const [useBNS, setUseBNS] = useState(false);
 
   // Auto-fill from template selection
-  React.useEffect(() => {
+  useEffect(() => {
     const saved = localStorage.getItem('template_prompt');
     if (saved) {
       setDescription(saved);

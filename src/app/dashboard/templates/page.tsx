@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+
 import { Box, Typography, Button, Grid, Card, CardContent, Chip, Divider } from '@mui/material';
 import { LayoutGrid, ArrowLeft, ArrowRight, Scale, Home, Briefcase, Users, FileText, ShieldCheck, Search, BookOpen, Building } from 'lucide-react';
 import Link from 'next/link';

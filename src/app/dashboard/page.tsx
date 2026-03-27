@@ -1,6 +1,5 @@
 "use client"
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Card, CardContent, Button, Grid, Avatar, LinearProgress, Paper
 } from '@mui/material';
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
+import GuestBanner from '@/components/GuestBanner';
 
 // Horizontal Style Feature Card
 function ActionCard({ title, desc, icon, path, primary = false }: { title: string, desc: string, icon: React.ReactNode, path: string, primary?: boolean }) {
@@ -106,23 +106,23 @@ function ToolCard({ title, icon, path }: { title: string, icon: React.ReactNode,
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [stats, setStats] = React.useState<any>(null);
-  const [loading, setLoading] = React.useState(true);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const isGuest = status === 'unauthenticated';
 
-  React.useEffect(() => {
-    if (status === 'unauthenticated') {
-      signIn();
-      return;
-    }
+  useEffect(() => {
     if (status === 'authenticated') {
       fetch('/api/stats')
         .then(res => res.json())
         .then(data => { setStats(data); setLoading(false); })
         .catch(() => setLoading(false));
     }
+    if (status === 'unauthenticated') {
+      setLoading(false);
+    }
   }, [status]);
 
-  if (status === 'loading' || (status === 'authenticated' && loading)) {
+  if (status === 'loading') {
     return (
       <Box p={6} display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="100vh" gap={2}>
         <Box sx={{ width: 40, height: 40, borderRadius: '10px', bgcolor: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
@@ -137,70 +137,62 @@ export default function Dashboard() {
   const firstName = session?.user?.name?.split(' ')[0] || 'Advocate';
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', p: { xs: 3, md: 5 }, minHeight: '100vh', pb: 10 }}>
-      
-      {/* Top Navigation / Header */}
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        mb: 6,
-        pb: 3,
-        borderBottom: '1px solid',
-        borderColor: 'divider'
-      }}>
-        <Box display="flex" alignItems="center" gap={2}>
-           <Box sx={{ p: 1, bgcolor: '#4f46e5', borderRadius: 2, color: 'white' }}>
-             <Scale size={24} />
-           </Box>
-           <Box>
-             <Typography variant="h6" fontWeight={800} sx={{ letterSpacing: '-0.02em', lineHeight: 1 }}>
-               AI Legal Desk
-             </Typography>
-             <Typography variant="caption" color="text.secondary" fontWeight={500}>
-               Premium Workspace
-             </Typography>
-           </Box>
-        </Box>
-        
-        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-          <Button 
-            component={Link}
-            href="/history"
-            variant="text" 
-            startIcon={<History size={18} />}
-            sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'none' }}
-          >
-            Session History
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<LogOut size={16} />}
-            onClick={() => signOut({ callbackUrl: '/' })}
-            sx={{
-              fontWeight: 600,
-              textTransform: 'none',
-              fontSize: '0.85rem',
-              color: '#64748b',
-              borderColor: '#e2e8f0',
-              borderRadius: '8px',
-              '&:hover': { bgcolor: '#fef2f2', borderColor: '#fca5a5', color: '#ef4444' },
-            }}
-          >
-            Sign Out
-          </Button>
-          <Avatar 
-            src={session?.user?.image || ''} 
-            sx={{ width: 40, height: 40, border: '2px solid', borderColor: 'divider' }}
-          >
-            {firstName.charAt(0)}
-          </Avatar>
-        </Box>
-      </Box>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* Guest banner */}
+      {isGuest && <GuestBanner />}
 
-      {/* User Stats Summary */}
-      <Grid container spacing={3} sx={{ mb: 6 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+      <Box sx={{ maxWidth: 1200, mx: 'auto', p: { xs: 3, md: 5 }, width: '100%', pb: 10 }}>
+
+        {/* Header */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 6, pb: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Box display="flex" alignItems="center" gap={2}>
+            <Box sx={{ p: 1, bgcolor: '#4f46e5', borderRadius: 2, color: 'white' }}>
+              <Scale size={24} />
+            </Box>
+            <Box>
+              <Typography variant="h6" fontWeight={800} sx={{ letterSpacing: '-0.02em', lineHeight: 1 }}>AI Legal Desk</Typography>
+              <Typography variant="caption" color="text.secondary" fontWeight={500}>
+                {isGuest ? 'Explore our legal tools' : 'Premium Workspace'}
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+            {isGuest ? (
+              // Guest header actions
+              <>
+                <Button component={Link} href="/" variant="text"
+                  sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'none' }}>Home</Button>
+                <Button variant="contained" onClick={() => signIn()}
+                  sx={{ fontWeight: 700, textTransform: 'none', borderRadius: '8px', bgcolor: '#4f46e5',
+                    boxShadow: 'none', '&:hover': { bgcolor: '#4338ca' } }}>
+                  Sign In Free
+                </Button>
+              </>
+            ) : (
+              // Authenticated header actions
+              <>
+                <Button component={Link} href="/history" variant="text" startIcon={<History size={18} />}
+                  sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'none' }}>Session History</Button>
+                <Button variant="outlined" startIcon={<LogOut size={16} />}
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  sx={{ fontWeight: 600, textTransform: 'none', fontSize: '0.85rem', color: '#64748b',
+                    borderColor: '#e2e8f0', borderRadius: '8px',
+                    '&:hover': { bgcolor: '#fef2f2', borderColor: '#fca5a5', color: '#ef4444' } }}>
+                  Sign Out
+                </Button>
+                <Avatar src={session?.user?.image || ''} sx={{ width: 40, height: 40, border: '2px solid', borderColor: 'divider' }}>
+                  {firstName.charAt(0)}
+                </Avatar>
+              </>
+            )}
+          </Box>
+        </Box>
+
+        {/* User Stats — authenticated only */}
+        {!isGuest && <Grid container spacing={3} sx={{ mb: 6 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+
             <Card sx={{ borderRadius: 4, bgcolor: '#4f46e5', color: 'white', p: 1, height: '100%' }}>
                 <CardContent sx={{ pb: '16px !important' }}>
                     <Box display="flex" justifyContent="space-between" mb={2}>
@@ -255,133 +247,104 @@ export default function Dashboard() {
                 </CardContent>
             </Card>
         </Grid>
-      </Grid>
+        </Grid>}
 
-      {/* Welcome Section */}
-      <Box sx={{ mb: 6 }}>
-        <Typography variant="h3" fontWeight={800} sx={{ color: 'text.primary', letterSpacing: '-0.03em', mb: 1 }}>
-          Welcome back, {firstName}.
-        </Typography>
-        <Typography variant="h6" color="text.secondary" fontWeight={400} sx={{ maxWidth: 600 }}>
-          Manage your legal drafting history and usage limits here. What would you like to build today?
-        </Typography>
-      </Box>
-
-      {/* Primary Actions (Horizontal Cards) */}
-      <Grid container spacing={3} sx={{ mb: 8 }}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <ActionCard 
-            primary
-            title="Start New AI Draft" 
-            desc="Generate notices, consumer complaints, and agreements using advanced legal AI."
-            icon={<Sparkles size={28} />}
-            path="/generate"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <ActionCard 
-            title="Session History" 
-            desc={`You have drafted ${stats?.totalNotices || 0} documents so far. View your latest work.`}
-            icon={<History size={28} />}
-            path="/history"
-          />
-        </Grid>
-      </Grid>
-
-      {/* Specialized Tools */}
-      <Box>
-        <Typography variant="h6" fontWeight={700} mb={3} sx={{ color: 'text.primary' }}>
-          Specialized Legal Tools
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
-            <ToolCard 
-              title="Legal Memo" 
-              icon={<FileText size={24} />}
-              path="/dashboard/memo"
-            />
-          </Grid>
-          <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
-            <ToolCard 
-              title="Build Arguments" 
-              icon={<ShieldCheck size={24} />}
-              path="/dashboard/arguments"
-            />
-          </Grid>
-          <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
-            <ToolCard 
-              title="Upload PDF" 
-              icon={<UploadCloud size={24} />}
-              path="/dashboard/upload"
-            />
-          </Grid>
-          <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
-            <ToolCard 
-              title="Templates" 
-              icon={<LayoutGrid size={24} />}
-              path="/dashboard/templates"
-            />
-          </Grid>
-          <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
-            <ToolCard 
-              title="Research" 
-              icon={<Search size={24} />}
-              path="/dashboard/research"
-            />
-          </Grid>
-        </Grid>
-      </Box>
-
-      {/* Recent Activity & Billing */}
-      <Box sx={{ mt: 8 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h6" fontWeight={700} sx={{ color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
-               <Activity size={20} color="#4f46e5" /> Recent Usage
+        {/* Welcome Section — authenticated only */}
+        {!isGuest && (
+          <Box sx={{ mb: 6 }}>
+            <Typography variant="h3" fontWeight={800} sx={{ color: 'text.primary', letterSpacing: '-0.03em', mb: 1 }}>
+              Welcome back, {firstName}.
             </Typography>
-        </Box>
-        
-        <Paper sx={{ borderRadius: 4, border: '1px solid', borderColor: 'divider', overflow: 'hidden', boxShadow: 'none' }}>
-            {(!stats?.transactions || stats.transactions.length === 0) ? (
-                <Box p={4} textAlign="center">
-                    <Typography color="text.secondary">No recent credit activity.</Typography>
-                </Box>
-            ) : (
-                stats.transactions.map((tx: any, idx: number) => (
-                    <Box 
-                        key={tx.id} 
-                        sx={{ 
-                            p: 2, px: 3, 
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                            borderBottom: idx === stats.transactions.length - 1 ? 'none' : '1px solid',
-                            borderColor: 'divider',
-                            bgcolor: idx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.01)'
-                        }}
-                    >
-                        <Box>
-                            <Typography variant="subtitle2" fontWeight={600} color="text.primary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                {tx.type === 'chat' ? <MessageSquare size={16} /> : <FileText size={16} />}
-                                {tx.docType === 'legalNotice' ? 'Legal Notice' : tx.docType === 'complaintDraft' ? 'Criminal Complaint' : tx.docType === 'chat-assistant' ? 'AI Co-pilot' : tx.docType}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                                {tx.tokens ? `${tx.tokens.toLocaleString()} tokens processed • ` : ''} 
-                                {tx.createdAt ? formatDistanceToNow(new Date(tx.createdAt), { addSuffix: true }) : ''}
-                            </Typography>
-                        </Box>
-                        
-                        <Box sx={{ 
-                            px: 1.5, py: 0.5, borderRadius: 2, 
-                            fontWeight: 700, fontSize: '0.85rem',
-                            color: tx.amount < 0 ? '#ef4444' : '#10b981',
-                            bgcolor: tx.amount < 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'
-                        }}>
-                            {tx.amount > 0 ? '+' : ''}{tx.amount} cr
-                        </Box>
-                    </Box>
-                ))
-            )}
-        </Paper>
-      </Box>
+            <Typography variant="h6" color="text.secondary" fontWeight={400} sx={{ maxWidth: 600 }}>
+              Manage your legal drafting history and usage limits here. What would you like to build today?
+            </Typography>
+          </Box>
+        )}
+        {isGuest && (
+          <Box sx={{ mb: 6 }}>
+            <Typography variant="h4" fontWeight={800} sx={{ color: 'text.primary', letterSpacing: '-0.03em', mb: 1 }}>
+              Explore Legal AI Tools
+            </Typography>
+            <Typography variant="h6" color="text.secondary" fontWeight={400} sx={{ maxWidth: 600 }}>
+              Try any tool below — sign in free to save your work and access your full drafting history.
+            </Typography>
+          </Box>
+        )}
 
+        {/* Primary Actions */}
+        <Grid container spacing={3} sx={{ mb: 8 }}>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <ActionCard
+              primary
+              title="Start New AI Draft"
+              desc="Generate notices, consumer complaints, and agreements using advanced legal AI."
+              icon={<Sparkles size={28} />}
+              path="/generate"
+            />
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <ActionCard
+              title={isGuest ? 'Browse Templates' : 'Session History'}
+              desc={isGuest ? 'Pick from 9+ pre-built templates for common Indian legal notices.' : `You have drafted ${stats?.totalNotices || 0} documents so far. View your latest work.`}
+              icon={isGuest ? <LayoutGrid size={28} /> : <History size={28} />}
+              path={isGuest ? '/dashboard/templates' : '/history'}
+            />
+          </Grid>
+        </Grid>
+
+        {/* Specialized Tools */}
+        <Box>
+          <Typography variant="h6" fontWeight={700} mb={3} sx={{ color: 'text.primary' }}>Specialized Legal Tools</Typography>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 6, sm: 4, md: 2.4 }}><ToolCard title="Legal Memo" icon={<FileText size={24} />} path="/dashboard/memo" /></Grid>
+            <Grid size={{ xs: 6, sm: 4, md: 2.4 }}><ToolCard title="Build Arguments" icon={<ShieldCheck size={24} />} path="/dashboard/arguments" /></Grid>
+            <Grid size={{ xs: 6, sm: 4, md: 2.4 }}><ToolCard title="Upload PDF" icon={<UploadCloud size={24} />} path="/dashboard/upload" /></Grid>
+            <Grid size={{ xs: 6, sm: 4, md: 2.4 }}><ToolCard title="Templates" icon={<LayoutGrid size={24} />} path="/dashboard/templates" /></Grid>
+            <Grid size={{ xs: 6, sm: 4, md: 2.4 }}><ToolCard title="Research" icon={<Search size={24} />} path="/dashboard/research" /></Grid>
+          </Grid>
+        </Box>
+
+        {/* Recent Activity — authenticated only */}
+        {!isGuest && (
+          <Box sx={{ mt: 8 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+              <Typography variant="h6" fontWeight={700} sx={{ color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Activity size={20} color="#4f46e5" /> Recent Usage
+              </Typography>
+            </Box>
+            <Paper sx={{ borderRadius: 4, border: '1px solid', borderColor: 'divider', overflow: 'hidden', boxShadow: 'none' }}>
+              {(!stats?.transactions || stats.transactions.length === 0) ? (
+                <Box p={4} textAlign="center">
+                  <Typography color="text.secondary">No recent credit activity.</Typography>
+                </Box>
+              ) : (
+                stats.transactions.map((tx: any, idx: number) => (
+                  <Box key={tx.id} sx={{ p: 2, px: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    borderBottom: idx === stats.transactions.length - 1 ? 'none' : '1px solid', borderColor: 'divider',
+                    bgcolor: idx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.01)' }}>
+                    <Box>
+                      <Typography variant="subtitle2" fontWeight={600} color="text.primary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {tx.type === 'chat' ? <MessageSquare size={16} /> : <FileText size={16} />}
+                        {tx.docType === 'legalNotice' ? 'Legal Notice' : tx.docType === 'complaintDraft' ? 'Criminal Complaint' : tx.docType === 'chat-assistant' ? 'AI Co-pilot' : tx.docType}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                        {tx.tokens ? `${tx.tokens.toLocaleString()} tokens processed • ` : ''}
+                        {tx.createdAt ? formatDistanceToNow(new Date(tx.createdAt), { addSuffix: true }) : ''}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ px: 1.5, py: 0.5, borderRadius: 2, fontWeight: 700, fontSize: '0.85rem',
+                      color: tx.amount < 0 ? '#ef4444' : '#10b981',
+                      bgcolor: tx.amount < 0 ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)' }}>
+                      {tx.amount > 0 ? '+' : ''}{tx.amount} cr
+                    </Box>
+                  </Box>
+                ))
+              )}
+            </Paper>
+          </Box>
+        )}
+
+      </Box>
     </Box>
   );
 }

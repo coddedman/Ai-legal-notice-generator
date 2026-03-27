@@ -1,6 +1,8 @@
 'use client';
+import React from 'react';
+'use client';
 
-import React, { useState, useRef, useContext } from 'react';
+import { useState, useRef, useContext, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -34,8 +36,7 @@ import {
   ClipboardList,
   Check,
 } from 'lucide-react';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+// jsPDF & html2canvas loaded dynamically in handleExportPDF to avoid bundle bloat
 import dynamic from 'next/dynamic';
 import { NoticeFormData } from './NoticeForm';
 import { useSession, signIn, signOut } from 'next-auth/react';
@@ -125,11 +126,11 @@ export default function DraftingWorkspace({
   ]);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setContent(initialContent);
   }, [initialContent]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatHistory]);
 
@@ -145,6 +146,9 @@ export default function DraftingWorkspace({
   const handleExportPDF = async () => {
     const editor = document.querySelector('.doc-content-area') as HTMLElement;
     if (!editor) return;
+    // Dynamic imports — only fetched when user clicks Export PDF
+    const html2canvas = (await import('html2canvas')).default;
+    const { jsPDF } = await import('jspdf');
     const canvas = await html2canvas(editor, { scale: 2, useCORS: true, logging: false });
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');

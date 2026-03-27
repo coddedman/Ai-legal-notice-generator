@@ -1,6 +1,5 @@
 'use client';
-
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -37,7 +36,7 @@ interface SidebarProps {
 
 export default function Sidebar({ onSessionSelect, sessions = [] }: SidebarProps) {
   const { data: session } = useSession();
-  const [openRecent, setOpenRecent] = React.useState(true);
+  const [openRecent, setOpenRecent] = useState(true);
 
   return (
     <Box sx={{

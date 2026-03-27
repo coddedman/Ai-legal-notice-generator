@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@mui/material/styles';
 import {
   Box,
@@ -96,7 +96,7 @@ export default function NoticeOutput({ initialData, formData }: OutputProps) {
     "Finalizing prayer/ultimatum clause...",
   ];
 
-  React.useEffect(() => {
+  useEffect(() => {
     let interval: NodeJS.Timeout;
     const isAnyLoading = Object.values(docLoading).some(v => v);
     if (isAnyLoading) {
