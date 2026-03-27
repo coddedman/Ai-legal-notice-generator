@@ -156,7 +156,7 @@ export default function LandingPage() {
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Button
               component={Link}
-              href="/generate"
+              href="/dashboard"
               variant="contained"
               size="large"
               endIcon={<ArrowRight />}
@@ -273,7 +273,7 @@ export default function LandingPage() {
           </Typography>
           <Button
             component={Link}
-            href="/generate"
+            href="/dashboard"
             variant="contained"
             size="large"
             endIcon={<ArrowRight />}
