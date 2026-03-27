@@ -1,21 +1,17 @@
 'use client';
 
 import { useState, useContext, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import {
-  Container, Typography, Box, Paper, Snackbar, Alert,
-  CircularProgress, IconButton, Button, Avatar, Menu,
-  MenuItem, ListItemIcon, Divider
+  Container, Typography, Box, Snackbar, Alert,
+  CircularProgress, Button,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { ColorModeContext } from '@/theme/ThemeRegistry';
 import SimpleDraftInput from '@/components/SimpleDraftInput';
 import DraftingWorkspace from '@/components/DraftingWorkspace';
 import { NoticeFormData } from '@/components/NoticeForm';
-import {
-  Sun, Moon, UserCircle, LogOut, ArrowLeft, Sparkles
-} from 'lucide-react';
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { Sparkles } from 'lucide-react';
+import { useSession, signIn } from 'next-auth/react';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 
@@ -29,15 +25,7 @@ const LOADING_MESSAGES = [
 ];
 
 export default function GeneratePage() {
-  const theme = useTheme();
-  const colorMode = useContext(ColorModeContext);
   const { data: session, status } = useSession();
-
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const openProfile = Boolean(anchorEl);
-  const handleProfileClick = (event: React.MouseEvent<HTMLElement>) =>
-    setAnchorEl(event.currentTarget);
-  const handleProfileClose = () => setAnchorEl(null);
 
   const [loading, setLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
@@ -97,6 +85,7 @@ export default function GeneratePage() {
       evidenceText?: string;
       targetDoc: string;
     }) => {
+      // Gate sign-in only at generation time
       if (status === 'unauthenticated') {
         localStorage.setItem('draft_initial_input', JSON.stringify(inputData));
         signIn();
@@ -166,10 +155,7 @@ export default function GeneratePage() {
   );
 
   const handleModify = async (refinement: string): Promise<void> => {
-    if (status === 'unauthenticated') {
-      signIn();
-      return;
-    }
+    if (status === 'unauthenticated') { signIn(); return; }
     setLoading(true);
     try {
       const res = await fetch('/api/generate', {
@@ -199,6 +185,7 @@ export default function GeneratePage() {
     }
   };
 
+  // After sign-in, auto-resume any saved generation
   useEffect(() => {
     const savedData = localStorage.getItem('draft_initial_input');
     if (savedData && status === 'authenticated') {
@@ -207,6 +194,7 @@ export default function GeneratePage() {
     }
   }, [status, handleGenerate]);
 
+  // ─── Session loading spinner ──────────────────────────────────────────────
   if (status === 'loading') {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', gap: 2 }}>
@@ -218,7 +206,7 @@ export default function GeneratePage() {
     );
   }
 
-  // ─── WORKSPACE MODE: full-page, no sidebar ───────────────────────────────
+  // ─── WORKSPACE MODE ───────────────────────────────────────────────────────
   if (workspaceMode && generatedContent !== null) {
     return (
       <>
@@ -231,7 +219,6 @@ export default function GeneratePage() {
           }
           onEditDetails={() => setWorkspaceMode(false)}
           onSave={async content => {
-            if (status === 'unauthenticated') { signIn(); return; }
             setLoading(true);
             try {
               const res = await fetch('/api/save-notice', {
@@ -270,68 +257,108 @@ export default function GeneratePage() {
     );
   }
 
-  // ─── INPUT MODE: sidebar + form ──────────────────────────────────────────
+  // ─── INPUT MODE: open to all, sidebar only for authenticated ─────────────
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', bgcolor: '#f8fafc' }}>
-      {/* Sidebar */}
-      {status === 'authenticated' && (
-        <Sidebar
-          sessions={recentNotices}
-          onSessionSelect={id => {
-            const notice = recentNotices.find(n => n.id === id);
-            if (notice) {
-              setGeneratedContent(notice.content || '');
-              if (notice.formData && typeof notice.formData === 'object') {
-                setFormData(prev => ({ ...prev, ...notice.formData }));
-              }
-              setWorkspaceMode(true);
-            }
-          }}
-        />
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#f8fafc' }}>
+
+      {/* Guest banner — shown only for unauthenticated, non-intrusive */}
+      {status === 'unauthenticated' && (
+        <Box sx={{
+          bgcolor: '#1e1b4b',
+          px: { xs: 2, md: 4 },
+          py: 1.2,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 1,
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#818cf8', flexShrink: 0 }} />
+            <Typography sx={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>
+              You&apos;re browsing as a guest. Sign in to save drafts, access history &amp; unlock all features.
+            </Typography>
+          </Box>
+          <Button
+            size="small"
+            variant="contained"
+            onClick={() => signIn()}
+            startIcon={<Sparkles size={14} />}
+            sx={{
+              borderRadius: '8px', textTransform: 'none', fontWeight: 700,
+              fontSize: '0.8rem', px: 2, py: 0.6,
+              bgcolor: '#4f46e5', boxShadow: 'none',
+              '&:hover': { bgcolor: '#4338ca' },
+            }}
+          >
+            Sign In Free
+          </Button>
+        </Box>
       )}
 
-      {/* Main content */}
-      <Box sx={{
-        flexGrow: 1,
-        position: 'relative',
-        overflowY: 'auto',
-        height: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-      }}>
-        {/* Loading overlay */}
-        {loading && (
-          <Box sx={{
-            position: 'absolute', inset: 0, zIndex: 10,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            bgcolor: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(4px)',
-          }}>
-            <Box sx={{ position: 'relative', width: 80, height: 80, mb: 4 }}>
-              <CircularProgress size={80} thickness={2} sx={{ color: '#4f46e5', position: 'absolute' }} />
-              <Sparkles
-                size={32}
-                color="#4f46e5"
-                style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
-              />
-            </Box>
-            <Typography variant="h5" fontWeight={700} mb={1} color="text.primary">
-              {LOADING_MESSAGES[loadingStep] || 'Drafting your document...'}
-            </Typography>
-          </Box>
+      {/* Body row: sidebar + main */}
+      <Box sx={{ display: 'flex', flexGrow: 1 }}>
+
+        {/* Sidebar — authenticated users only */}
+        {status === 'authenticated' && (
+          <Sidebar
+            sessions={recentNotices}
+            onSessionSelect={id => {
+              const notice = recentNotices.find((n: any) => n.id === id);
+              if (notice) {
+                setGeneratedContent(notice.content || '');
+                if (notice.formData && typeof notice.formData === 'object') {
+                  setFormData(prev => ({ ...prev, ...notice.formData }));
+                }
+                setWorkspaceMode(true);
+              }
+            }}
+          />
         )}
 
-        <Container maxWidth="md" sx={{ py: 6 }}>
-          <Box textAlign="center" mb={6}>
-            <Typography variant="h3" fontWeight={900} mb={2} sx={{ letterSpacing: '-0.04em', color: '#1e293b' }}>
-              Legal Drafting Desk
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 500, mx: 'auto' }}>
-              Generate precise legal notices and agreements. Professional results in seconds.
-            </Typography>
-          </Box>
+        {/* Main content area */}
+        <Box sx={{
+          flexGrow: 1,
+          position: 'relative',
+          overflowY: 'auto',
+          height: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          {/* Loading overlay */}
+          {loading && (
+            <Box sx={{
+              position: 'absolute', inset: 0, zIndex: 10,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              bgcolor: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(4px)',
+            }}>
+              <Box sx={{ position: 'relative', width: 80, height: 80, mb: 4 }}>
+                <CircularProgress size={80} thickness={2} sx={{ color: '#4f46e5', position: 'absolute' }} />
+                <Sparkles
+                  size={32}
+                  color="#4f46e5"
+                  style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+                />
+              </Box>
+              <Typography variant="h5" fontWeight={700} mb={1} color="text.primary">
+                {LOADING_MESSAGES[loadingStep] || 'Drafting your document...'}
+              </Typography>
+            </Box>
+          )}
 
-          <SimpleDraftInput onSubmit={handleGenerate} loading={loading} />
-        </Container>
+          <Container maxWidth="md" sx={{ py: 6 }}>
+            <Box textAlign="center" mb={6}>
+              <Typography variant="h3" fontWeight={900} mb={2} sx={{ letterSpacing: '-0.04em', color: '#1e293b' }}>
+                Legal Drafting Desk
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 500, mx: 'auto' }}>
+                Generate precise legal notices and agreements. Professional results in seconds.
+              </Typography>
+            </Box>
+
+            <SimpleDraftInput onSubmit={handleGenerate} loading={loading} />
+          </Container>
+        </Box>
       </Box>
 
       <Snackbar

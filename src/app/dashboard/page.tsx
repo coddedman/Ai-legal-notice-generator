@@ -4,11 +4,12 @@ import React from 'react';
 import {
   Box, Typography, Card, CardContent, Button, Grid, Avatar, LinearProgress, Paper
 } from '@mui/material';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut, signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import {
   Sparkles, FileSearch, UploadCloud, Search, FileText,
   MessageSquare, LayoutGrid, ArrowRight, ShieldCheck, Scale, History,
-  TrendingUp, CreditCard, Clock, CheckCircle, Activity
+  TrendingUp, CreditCard, Clock, CheckCircle, Activity, LogOut
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
@@ -104,25 +105,31 @@ function ToolCard({ title, icon, path }: { title: string, icon: React.ReactNode,
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [stats, setStats] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
+    if (status === 'unauthenticated') {
+      signIn();
+      return;
+    }
     if (status === 'authenticated') {
       fetch('/api/stats')
         .then(res => res.json())
-        .then(data => {
-            setStats(data);
-            setLoading(false);
-        })
+        .then(data => { setStats(data); setLoading(false); })
         .catch(() => setLoading(false));
     }
   }, [status]);
 
-  if (status === 'loading' || loading) {
+  if (status === 'loading' || (status === 'authenticated' && loading)) {
     return (
-      <Box p={6} display="flex" justifyContent="center">
-         <Typography color="text.secondary" fontWeight={500}>Loading your workspace...</Typography>
+      <Box p={6} display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="100vh" gap={2}>
+        <Box sx={{ width: 40, height: 40, borderRadius: '10px', bgcolor: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+          <Scale size={22} color="white" />
+        </Box>
+        <Typography color="text.secondary" fontWeight={600}>Loading your workspace...</Typography>
+        <Typography variant="caption" color="text.disabled">Setting up your legal AI desk</Typography>
       </Box>
     );
   }
@@ -156,7 +163,7 @@ export default function Dashboard() {
            </Box>
         </Box>
         
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
           <Button 
             component={Link}
             href="/history"
@@ -165,6 +172,22 @@ export default function Dashboard() {
             sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'none' }}
           >
             Session History
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<LogOut size={16} />}
+            onClick={() => signOut({ callbackUrl: '/' })}
+            sx={{
+              fontWeight: 600,
+              textTransform: 'none',
+              fontSize: '0.85rem',
+              color: '#64748b',
+              borderColor: '#e2e8f0',
+              borderRadius: '8px',
+              '&:hover': { bgcolor: '#fef2f2', borderColor: '#fca5a5', color: '#ef4444' },
+            }}
+          >
+            Sign Out
           </Button>
           <Avatar 
             src={session?.user?.image || ''} 
@@ -258,7 +281,7 @@ export default function Dashboard() {
         <Grid size={{ xs: 12, md: 6 }}>
           <ActionCard 
             title="Session History" 
-            desc="You have drafted {stats?.totalNotices || 0} documents so far. View your latest work."
+            desc={`You have drafted ${stats?.totalNotices || 0} documents so far. View your latest work.`}
             icon={<History size={28} />}
             path="/history"
           />
