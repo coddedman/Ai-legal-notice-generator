@@ -19,21 +19,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  async redirects() {
-    return [
-      {
-        source: '/:path*',
-        has: [
-          {
-            type: 'host',
-            value: 'www.mylegalnotice.in',
-          },
-        ],
-        destination: 'https://mylegalnotice.in/:path*',
-        permanent: true,
-      },
-    ];
-  },
 };
 
 export default nextConfig;
