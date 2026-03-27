@@ -20,6 +20,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   logger: {
     error(error) {
       console.error("🔴 NEXTAUTH CRITICAL ERROR:", error);
+      if (error instanceof Error && error.cause) {
+        console.error("💥 EXACT DB CAUSE:", JSON.stringify(error.cause, null, 2));
+      } else if (error && (error as any).cause) {
+        console.error("💥 EXACT DB CAUSE (raw):", (error as any).cause);
+      }
     },
     warn(code) {
       console.warn("🟠 NEXTAUTH WARNING:", code);
