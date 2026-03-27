@@ -21,10 +21,10 @@ function ActionCard({ title, desc, icon, path, primary = false }: { title: strin
       component={Link} 
       href={path}
       sx={{
-        borderRadius: 4, 
+        borderRadius: '24px', 
         border: '1px solid', 
-        borderColor: primary ? 'rgba(79,70,229,0.3)' : 'rgba(0,0,0,0.06)', 
-        background: primary ? 'linear-gradient(145deg, #ffffff 0%, #f5f3ff 100%)' : '#ffffff',
+        borderColor: primary ? 'rgba(79,70,229,0.2)' : 'rgba(0,0,0,0.04)', 
+        background: primary ? 'linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%)' : '#ffffff',
         boxShadow: primary ? '0 12px 32px rgba(79, 70, 229, 0.08)' : '0 4px 12px rgba(0,0,0,0.02)',
         height: '100%',
         textDecoration: 'none',
@@ -39,12 +39,12 @@ function ActionCard({ title, desc, icon, path, primary = false }: { title: strin
           background: 'linear-gradient(to bottom, #4f46e5, #818cf8)'
         } : {},
         '&:hover': {
-          borderColor: primary ? '#4f46e5' : 'rgba(79,70,229,0.2)',
+          borderColor: primary ? '#4f46e5' : 'rgba(0,0,0,0.08)',
           transform: 'translateY(-4px)',
-          boxShadow: primary ? '0 20px 40px rgba(79, 70, 229, 0.15)' : '0 12px 24px rgba(0,0,0,0.06)',
+          boxShadow: primary ? '0 20px 40px rgba(79, 70, 229, 0.15)' : '0 12px 24px rgba(0,0,0,0.04)',
           '& .icon-wrapper': {
             transform: 'scale(1.05) rotate(-3deg)',
-            bgcolor: primary ? '#4338ca' : 'rgba(79,70,229,0.12)'
+            bgcolor: primary ? '#4338ca' : 'rgba(79,70,229,0.08)'
           },
           '& .arrow': {
             transform: 'translateX(4px)',
@@ -54,8 +54,8 @@ function ActionCard({ title, desc, icon, path, primary = false }: { title: strin
       }}
     >
       <Box className="icon-wrapper" sx={{ 
-        width: 64, height: 64, borderRadius: 3.5, 
-        bgcolor: primary ? '#4f46e5' : 'rgba(79,70,229,0.08)', 
+        width: 64, height: 64, borderRadius: '16px', 
+        bgcolor: primary ? '#4f46e5' : 'rgba(79,70,229,0.06)', 
         color: primary ? 'white' : '#4f46e5', 
         display: 'flex', alignItems: 'center', justifyContent: 'center', 
         flexShrink: 0, mr: 3,
@@ -85,9 +85,9 @@ function ToolCard({ title, icon, path }: { title: string, icon: React.ReactNode,
       component={Link} 
       href={path}
       sx={{
-        borderRadius: 4, 
+        borderRadius: '24px', 
         border: '1px solid', 
-        borderColor: 'rgba(0,0,0,0.06)', 
+        borderColor: 'rgba(0,0,0,0.04)', 
         background: '#ffffff',
         boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
         textDecoration: 'none',
@@ -97,16 +97,17 @@ function ToolCard({ title, icon, path }: { title: string, icon: React.ReactNode,
         justifyContent: 'center',
         textAlign: 'center',
         p: 3,
+        py: 4,
         height: '100%',
         transition: 'all 0.3s ease',
         '&:hover': {
-          borderColor: 'rgba(79,70,229,0.3)',
+          borderColor: 'rgba(79,70,229,0.2)',
           background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
           transform: 'translateY(-4px)',
-          boxShadow: '0 12px 24px rgba(79, 70, 229, 0.08)',
+          boxShadow: '0 12px 20px rgba(79, 70, 229, 0.06)',
           '& .icon': {
             color: '#4f46e5',
-            transform: 'scale(1.1)'
+            transform: 'translateY(-2px)'
           }
         }
       }}

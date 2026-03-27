@@ -30,8 +30,10 @@ export default function ThemeRegistry({ children }: { children: React.ReactNode 
   return (
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
-        <CssBaseline enableColorScheme />
-        {children}
+        <>
+          <CssBaseline enableColorScheme />
+          {children}
+        </>
       </ThemeProvider>
     </ColorModeContext.Provider>
   );
